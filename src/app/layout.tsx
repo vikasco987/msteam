@@ -1,20 +1,15 @@
-// src/app/layout.tsx
 import './globals.css';
-import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 
-export const metadata: Metadata = {
-  title: 'Team Dashboard',
-  description: 'Manage your team, tasks, and progress efficiently.',
+export const metadata = {
+  title: 'ClickUp Clone',
+  description: 'Team Management App',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-gray-100 text-gray-900">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
