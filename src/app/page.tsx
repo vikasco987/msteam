@@ -1,9 +1,8 @@
-// src/app/page.tsx
 export default function DashboardHome() {
   return (
     <div>
-      <h1 className="text-2xl font-bold">Welcome to Your Dashboard</h1>
-      <p className="mt-2 text-gray-600">Start managing your team tasks and members.</p>
+      <h2 className="text-2xl font-semibold mb-4">Welcome to your Dashboard 👋</h2>
+      <p>Here you can manage your tasks, view updates, and collaborate with your team.</p>
     </div>
   );
 }
