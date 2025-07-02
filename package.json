@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.23.2",
     "@hello-pangea/dnd": "^18.0.1",
     "@prisma/client": "^6.10.1",
+    "@radix-ui/react-slot": "^1.2.3",
     "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.525.0",
