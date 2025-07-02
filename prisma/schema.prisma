@@ -1,0 +1,30 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb" // or "postgresql" or "mysql" depending on your DB
+  url      = env("DATABASE_URL")
+}
+
+
+
+model Task {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  status     String
+  tags       String[]
+  dueDate    DateTime?
+  priority   String?
+  assigneeId String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+}
+
+
+
+
+
+
