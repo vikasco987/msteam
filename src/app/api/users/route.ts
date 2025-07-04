@@ -182,11 +182,16 @@
 
 
 
+
+
+
+
+
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { users } from "@clerk/clerk-sdk-node";
 import { prisma } from "../../../../lib/prisma";
-import { Prisma } from "@prisma/client"; // ✅ correct import
+import type { Prisma } from "@prisma/client"; // <-- Add this import
 
 type JsonTaskBody = {
   title: string;
@@ -198,10 +203,10 @@ type JsonTaskBody = {
   projectId?: string;
   assignerEmail?: string;
   assignerName?: string;
-  customFields?: Prisma.JsonObject; // ✅ valid type
+  customFields?: Prisma.JsonObject; // ✅ Now this works correctly
 };
 
-// ✅ GET: Fetch tasks for a user
+// GET handler
 export async function GET(req: NextRequest) {
   try {
     const { userId } = await getAuth(req);
@@ -224,7 +229,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ✅ POST: Create task
+// POST handler
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await getAuth(req);
@@ -253,7 +258,7 @@ export async function POST(req: NextRequest) {
         projectId: data.projectId || undefined,
         assignerEmail: data.assignerEmail || assignerEmail,
         assignerName: data.assignerName || assignerName,
-        customFields: data.customFields ?? {},
+        customFields: data.customFields ?? {},  // safe fallback
         createdByClerkId: userId,
       },
     });
