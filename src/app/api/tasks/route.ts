@@ -1,128 +1,90 @@
-// // app/api/tasks/route.ts
-// import { auth } from '@clerk/nextjs/server';
-// import { NextRequest, NextResponse } from 'next/server';
-// import { prisma } from '../../../../lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
+import { users } from "@clerk/clerk-sdk-node";
+import { prisma } from "../../../../lib/prisma";
+import type { Prisma } from "@prisma/client"; // ✅ Correct Prisma type
 
-
-// export async function POST(req: NextRequest) {
-//    const { userId } = await auth(); // Clerk-authenticated user
-//   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-//   const data = await req.json();
-
-//   try {
-//     const task = await prisma.task.create({
-//       data: {
-//         title: data.title,
-//         status: data.status,
-//         tags: data.tags || [],
-//         dueDate: data.dueDate ? new Date(data.dueDate) : null,
-//         priority: data.priority || null,
-//         assigneeId: data.assigneeId || null,
-//         createdBy: userId,
-//       },
-//     });
-
-//     return NextResponse.json({ success: true, task });
-//   } catch (err) {
-//     console.error(err);
-//     return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
-//   }
-// }
-
-
-
-// export async function GET(_req: NextRequest) {
-// const { userId } = await auth();
-
-//   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-//   const tasks = await prisma.task.findMany({
-//     where: {
-//       OR: [
-//         { assigneeId: userId },
-//         { createdBy: userId },
-//       ],
-//     },
-//     orderBy: {
-//       createdAt: 'desc',
-//     },
-//   });
-
-//   return NextResponse.json(tasks);
-// }
-
-
-
-
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '../../../../lib/prisma';
-
-type CreateTaskBody = {
+type JsonTaskBody = {
   title: string;
-  status: string;
+  status?: string;
   tags?: string[];
   dueDate?: string;
   priority?: string | null;
-  assigneeId?: string | null;
+  assigneeId?: string;
+  projectId?: string;
+  assignerEmail?: string;
+  assignerName?: string;
+  customFields?: Prisma.JsonValue; // ✅ Match Prisma schema type
 };
 
+// ✅ GET: Fetch tasks
+export async function GET(req: NextRequest) {
+  try {
+    const { userId } = await getAuth(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        OR: [
+          { assigneeId: userId },
+          { createdByClerkId: userId },
+        ],
+      },
+      include: { subtasks: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(tasks, { status: 200 });
+  } catch (err) {
+    console.error("❌ GET /api/tasks error:", err);
+    return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
+  }
+}
+
+// ✅ POST: Create task
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  let data: CreateTaskBody;
-
   try {
-    data = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
+    const { userId } = await getAuth(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  try {
+    const data: JsonTaskBody = await req.json();
+    const clerkUser = await users.getUser(userId);
+
+    const assignerEmail = clerkUser.emailAddresses?.[0]?.emailAddress || "";
+    const assignerName = clerkUser.firstName || clerkUser.username || "Unknown";
+
+    if (!data.title) {
+      return NextResponse.json({ error: "Missing `title` field" }, { status: 400 });
+    }
+
     const task = await prisma.task.create({
       data: {
         title: data.title,
-        status: data.status,
-        tags: data.tags || [],
-        dueDate: data.dueDate ? new Date(data.dueDate) : null,
-        priority: data.priority || null,
-        assigneeId: data.assigneeId || null,
-        createdBy: userId,
+        status: data.status || "todo",
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        priority: data.priority || undefined,
+        assigneeId: data.assigneeId || undefined,
+        projectId: data.projectId || undefined,
+        assignerEmail: data.assignerEmail || assignerEmail,
+        assignerName: data.assignerName || assignerName,
+        customFields: data.customFields ?? null, // ✅ Fix: must be null if missing
+        createdByClerkId: userId,
       },
     });
 
-    return NextResponse.json({ success: true, task });
+    return NextResponse.json({ success: true, task }, { status: 201 });
   } catch (err) {
-    console.error('Error creating task:', err);
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+    console.error("❌ POST /api/tasks error:", err);
+    return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
   }
 }
 
-export async function GET() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const tasks = await prisma.task.findMany({
-      where: {
-        OR: [{ assigneeId: userId }, { createdBy: userId }],
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return NextResponse.json(tasks);
-  } catch (err) {
-    console.error('Error fetching tasks:', err);
-    return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
-  }
+export async function OPTIONS() {
+  return NextResponse.json({ ok: true });
 }
+

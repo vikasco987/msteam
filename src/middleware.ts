@@ -1,37 +1,26 @@
-// // middleware.ts
-// import { clerkMiddleware } from '@clerk/nextjs/server';
+// import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// export default clerkMiddleware();
+// const isProtectedRoute = createRouteMatcher([
+//   "/dashboard(.*)",
+//   "/api/tasks(.*)",
+// ]);
 
-// export const config = {
-//   matcher: [
-//     // Run middleware on all routes except for static files and internal paths
-//     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-//     '/(api|trpc)(.*)',
-//   ],
-// };
-
-
-
-
-// // middleware.ts
-// import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-
-// const isPublicRoute = createRouteMatcher(['/sign-in(.*)']);
-
-// export default clerkMiddleware(async (auth, req) => {
-//   if (!isPublicRoute(req)) {
-//     await auth().protect();
+// export default clerkMiddleware((auth, req) => {
+//   // ✅ Just call auth().protect directly without awaiting or invoking auth()
+//   if (isProtectedRoute(req)) {
+//     auth().protect(); // ← do not `await` this, it's synchronous
 //   }
 // });
 
 // export const config = {
 //   matcher: [
-//     // Match all routes except static files
-//     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-//     '/(api|trpc)(.*)',
+//     "/((?!_next|.*\\..*).*)", // all routes except static files
+//     "/(api|trpc)(.*)",        // all api/trpc routes
 //   ],
 // };
+
+
+
 
 
 
@@ -39,21 +28,28 @@
 
 
 // middleware.ts
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)"]);
+// ✅ Create matchers
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/team-board(.*)',
+  '/create-task(.*)',
+  '/api/tasks(.*)',
+  '/api/team-members(.*)',
+])
 
+// ✅ Apply middleware
 export default clerkMiddleware(async (auth, req) => {
-  // ✅ Do NOT call auth() — use it directly
-  if (!isPublicRoute(req)) {
-    await auth.protect(); // ✅ correct
+  if (isProtectedRoute(req)) {
+    await auth.protect() // ✅ NOT auth().protect() — this is the fix!
   }
-});
+})
 
+// ✅ Match API and all non-static routes
 export const config = {
   matcher: [
-    // Match all routes except static files
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    '/((?!_next|.*\\..*).*)',
+    '/(api|trpc)(.*)',
   ],
-};
+}

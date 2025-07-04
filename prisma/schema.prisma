@@ -1,30 +1,42 @@
-// prisma/schema.prisma
+// ✅ Full Working Schema without User model
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mongodb" // or "postgresql" or "mysql" depending on your DB
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
-
-
 model Task {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  title      String
-  status     String
-  tags       String[]
-  dueDate    DateTime?
-  priority   String?
-  assigneeId String?
-  createdBy  String
-  createdAt  DateTime @default(now())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  status        String
+  tags          String[]  @default([])
+  dueDate       DateTime?
+  priority      String?
+  projectId     String?
+  assignerEmail String?
+   assigneeEmail  String?  
+  assignerName  String?
+  attachments   String[]  @default([])
+  customFields  Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime?
+
+  // Clerk User IDs
+  assigneeId       String? // Clerk user ID
+  createdByClerkId String // Clerk user ID (required)
+
+  subtasks Subtask[]
 }
 
+model Subtask {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  completed Boolean @default(false)
 
-
-
-
-
+  taskId String @db.ObjectId
+  task   Task   @relation(fields: [taskId], references: [id])
+}

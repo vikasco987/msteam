@@ -90,24 +90,54 @@
 
 
 
+// // src/app/layout.tsx
+// import { ClerkProvider } from '@clerk/nextjs';
+// import './globals.css';
+// import ClientLayout from './ClientLayout';
+
+// export const metadata = {
+//   title: 'ClickUp Clone',
+//   description: 'Manage your team and tasks with Clerk + Next.js',
+// };
+
+// export default function RootLayout({ children }: { children: React.ReactNode }) {
+//   return (
+//     <ClerkProvider>
+//       <html lang="en">
+//         <body>
+//           <ClientLayout>{children}</ClientLayout>
+//         </body>
+//       </html>
+//     </ClerkProvider>
+//   );
+// }
+
+
+
+
+
+
+
+
 // src/app/layout.tsx
-import { ClerkProvider } from '@clerk/nextjs';
-import './globals.css';
-import ClientLayout from './ClientLayout';
+import { ClerkProvider } from "@clerk/nextjs";
+import "./globals.css";
+import ClientLayout from "./ClientLayout";
+import { ReactNode } from "react";
 
 export const metadata = {
-  title: 'ClickUp Clone',
-  description: 'Manage your team and tasks with Clerk + Next.js',
+  title: "ClickUp Clone",
+  description: "Manage your team and tasks with Clerk + Next.js",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body>
+    <html lang="en">
+      <body>
+        <ClerkProvider>
           <ClientLayout>{children}</ClientLayout>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

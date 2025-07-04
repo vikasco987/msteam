@@ -39,7 +39,7 @@
 
 
 
-
+//param
 
 
 
@@ -57,6 +57,7 @@ import { LayoutDashboard, Users, LogOut } from 'lucide-react';
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { label: 'Team Board', icon: Users, href: '/team-board' },
+   { label: 'Create Task', icon: LayoutDashboard, href: '/create-task' },
   { label: 'Logout', icon: LogOut, href: '/logout' },
 ];
 
