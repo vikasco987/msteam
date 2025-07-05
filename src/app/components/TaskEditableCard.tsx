@@ -1,114 +1,345 @@
-// // src/app/components/TaskEditableCard.tsx
+
+
+
+
+
+
+
+
+
 // "use client";
 
 // import React, { useState } from "react";
 
+// import { Task } from "../../types/task";
+
+// import { FaCalendarAlt, FaFire, FaUser, FaEnvelope,  FaSave } from "react-icons/fa";
+
+// type Task = {
+//   id: string;
+//   title: string;
+//   description?: string;
+//   dueDate?: string;
+//   priority?: string;
+//   tags?: string[];
+//   subtasks?: { title: string }[];
+//   assigner?: { name?: string; email?: string };
+//   assignee?: { name?: string; email?: string };
+//   customFields?: Record<string, any>;
+// };
+
 // interface Props {
-//   task: {
-//     id: string;
-//     title: string;
-//     description?: string;
-//     dueDate?: string;
-//     priority?: string;
-//     tags?: string[];
-//     customFields?: {
-//       shopName?: string;
-//       outletName?: string;
-//       phone?: string;
-//       email?: string;
-//       location?: string;
-//       accountNumber?: string;
-//       ifscCode?: string;
-//     };
-//   };
-//   onUpdate: (taskId: string, updates: Partial<Props["task"]>) => void;
-//   editable?: boolean; // New prop to toggle edit mode
+//   task: Task;
+//   onUpdate: (updatedTask: Task) => Promise<void>; // ✅ accepts async now
 // }
 
-// export default function TaskEditableCard({ task, onUpdate, editable = true }: Props) {
-//   const [editedTask, setEditedTask] = useState({
-//     title: task.title,
-//     description: task.description || "",
-//     dueDate: task.dueDate || "",
-//     priority: task.priority || "",
-//     tags: task.tags?.join(", ") || "",
-//     ...task.customFields,
-//   });
+// export default function TaskEditableCard({ task, onUpdate }: Props) {
+//   const [formData, setFormData] = useState<Task>({ ...task });
 
-//   const handleBlur = () => {
-//     const updatedFields = {
-//       title: editedTask.title,
-//       description: editedTask.description,
-//       dueDate: editedTask.dueDate,
-//       priority: editedTask.priority,
-//       tags: editedTask.tags.split(",").map((tag) => tag.trim()),
-//       customFields: {
-//         shopName: editedTask.shopName,
-//         outletName: editedTask.outletName,
-//         phone: editedTask.phone,
-//         email: editedTask.email,
-//         location: editedTask.location,
-//         accountNumber: editedTask.accountNumber,
-//         ifscCode: editedTask.ifscCode,
-//       },
-//     };
-//     onUpdate(task.id, updatedFields);
+//   const handleChange = (key: string, value: any) => {
+//     setFormData((prev) => ({ ...prev, [key]: value }));
 //   };
 
-//   const handleChange = (field: string, value: string) => {
-//     setEditedTask((prev) => ({ ...prev, [field]: value }));
+//   const handleCustomChange = (key: string, value: any) => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       customFields: { ...prev.customFields, [key]: value },
+//     }));
 //   };
 
-//   const renderField = (label: string, key: string, type: 'text' | 'date' | 'textarea' = 'text') => {
-//     const value = editedTask[key as keyof typeof editedTask] || "";
-//     if (!editable) {
-//       return (
-//         <p><strong>{label}:</strong> {value}</p>
-//       );
-//     }
-//     if (type === 'textarea') {
-//       return (
-//         <textarea
-//           value={value}
-//           onChange={(e) => handleChange(key, e.target.value)}
-//           onBlur={handleBlur}
-//           className="w-full border rounded px-2 py-1"
-//           placeholder={`${label}`}
-//         />
-//       );
-//     }
-//     return (
-//       <input
-//         type={type}
-//         value={value}
-//         onChange={(e) => handleChange(key, e.target.value)}
-//         onBlur={handleBlur}
-//         placeholder={label}
-//         className="w-full border rounded px-2 py-1"
-//       />
-//     );
+//   const handleSave = async () => {
+//     await onUpdate(formData);
 //   };
 
 //   return (
-//     <div className="space-y-2 text-sm text-gray-800">
-//       {renderField("🟣 Title", "title")}
-//       {renderField("📝 Description", "description", "textarea")}
-//       {renderField("📅 Due Date", "dueDate", "date")}
-//       {renderField("🔥 Priority", "priority")}
-//       {renderField("🏷️ Tags (comma separated)", "tags")}
+//     <div className="space-y-3 text-sm text-gray-800 p-4 bg-gradient-to-br from-purple-50 to-white rounded-lg shadow-sm border border-purple-200">
+//       <div>
+//         <label className="block font-medium text-purple-700 mb-1">📝 Title</label>
+//         <input
+//           value={formData.title}
+//           onChange={(e) => handleChange("title", e.target.value)}
+//           className="w-full px-3 py-2 border rounded-md bg-white"
+//           placeholder="Task title"
+//         />
+//       </div>
+
+//       <div>
+//         <label className="block font-medium text-purple-700 mb-1">🧾 Description</label>
+//         <textarea
+//           value={formData.description || ""}
+//           onChange={(e) => handleChange("description", e.target.value)}
+//           className="w-full px-3 py-2 border rounded-md bg-white"
+//           placeholder="Description"
+//         />
+//       </div>
+
+//       <div>
+//         <label className="block font-medium text-purple-700 mb-1 flex items-center gap-2">
+//           <FaCalendarAlt /> Due Date
+//         </label>
+//         <input
+//           type="date"
+//           value={formData.dueDate || ""}
+//           onChange={(e) => handleChange("dueDate", e.target.value)}
+//           className="w-full px-3 py-2 border rounded-md bg-white"
+//         />
+//       </div>
+
+//       <div>
+//         <label className="block font-medium text-purple-700 mb-1 flex items-center gap-2">
+//           <FaFire /> Priority
+//         </label>
+//         <select
+//           value={formData.priority || ""}
+//           onChange={(e) => handleChange("priority", e.target.value)}
+//           className="w-full px-3 py-2 border rounded-md bg-white"
+//         >
+//           <option value="">Select Priority</option>
+//           <option value="high">🔥 High</option>
+//           <option value="medium">⚖️ Medium</option>
+//           <option value="low">🧊 Low</option>
+//         </select>
+//       </div>
+
+//       <div>
+//         <label className="block font-medium text-purple-700 mb-1 flex items-center gap-2">
+//           <FaUser /> Assignee Name
+//         </label>
+//         <input
+//           type="text"
+//           value={formData.assignee?.name || ""}
+//           onChange={(e) =>
+//             handleChange("assignee", {
+//               ...formData.assignee,
+//               name: e.target.value,
+//             })
+//           }
+//           className="w-full px-3 py-2 border rounded-md bg-white"
+//           placeholder="Assignee Name"
+//         />
+//       </div>
+
+//       <div>
+//         <label className="block font-medium text-purple-700 mb-1 flex items-center gap-2">
+//           <FaEnvelope /> Assignee Email
+//         </label>
+//         <input
+//           type="email"
+//           value={formData.assignee?.email || ""}
+//           onChange={(e) =>
+//             handleChange("assignee", {
+//               ...formData.assignee,
+//               email: e.target.value,
+//             })
+//           }
+//           className="w-full px-3 py-2 border rounded-md bg-white"
+//           placeholder="Assignee Email"
+//         />
+//       </div>
+
+//       {formData.customFields &&
+//         Object.entries(formData.customFields).map(([key, value]) => (
+//           <div key={key}>
+//             <label className="block font-medium text-purple-700 mb-1 capitalize">
+//               {key.replace(/([A-Z])/g, " $1")}
+//             </label>
+//             <input
+//               value={value}
+//               onChange={(e) => handleCustomChange(key, e.target.value)}
+//               className="w-full px-3 py-2 border rounded-md bg-white"
+//               placeholder={key}
+//             />
+//           </div>
+//         ))}
+
+//       <div className="pt-2">
+//         <button
+//           onClick={handleSave}
+//           className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
+//         >
+//           <FaSave className="inline-block mr-2" />
+//           Save Changes
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+// "use client";
+
+// import React, { useState, ChangeEvent } from "react";
+// import { FaCalendarAlt, FaFire, FaUser, FaEnvelope, FaSave } from "react-icons/fa";
+
+// type CustomFields = Record<string, string>;
+
+// type Task = {
+//   id: string;
+//   title: string;
+//   description?: string;
+//   dueDate?: string;
+//   priority?: string;
+//   tags?: string[];
+//   subtasks?: { title: string }[];
+//   assigner?: { name?: string; email?: string };
+//   assignee?: { name?: string; email?: string };
+//   customFields?: CustomFields;
+// };
+
+// interface Props {
+//   task: Task;
+//   onUpdate: (updatedTask: Task) => Promise<void>;
+// }
+
+// export default function TaskEditableCard({ task, onUpdate }: Props) {
+//   const [formData, setFormData] = useState<Task>({ ...task });
+
+//   const handleChange = (key: keyof Task, value: string | object) => {
+//     setFormData((prev) => ({ ...prev, [key]: value }));
+//   };
+
+//   const handleCustomChange = (key: string, value: string) => {
+//     setFormData((prev) => ({
+//       ...prev,
+//       customFields: { ...prev.customFields, [key]: value },
+//     }));
+//   };
+
+//   const handleSave = async () => {
+//     await onUpdate(formData);
+//   };
+
+//   return (
+//     <div className="space-y-4 text-sm text-gray-800 p-5 bg-gradient-to-br from-purple-50 to-white rounded-xl shadow border border-purple-200">
+//       {/* Title */}
+//       <div>
+//         <label className="block text-purple-800 font-semibold mb-1">📝 Title</label>
+//         <input
+//           value={formData.title}
+//           onChange={(e: ChangeEvent<HTMLInputElement>) =>
+//             handleChange("title", e.target.value)
+//           }
+//           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+//           placeholder="Task title"
+//         />
+//       </div>
+
+//       {/* Description */}
+//       <div>
+//         <label className="block text-purple-800 font-semibold mb-1">📄 Description</label>
+//         <textarea
+//           value={formData.description || ""}
+//           onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+//             handleChange("description", e.target.value)
+//           }
+//           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+//           placeholder="Description"
+//         />
+//       </div>
+
+//       {/* Due Date */}
+//       <div>
+//         <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+//           <FaCalendarAlt /> Due Date
+//         </label>
+//         <input
+//           type="date"
+//           value={formData.dueDate || ""}
+//           onChange={(e: ChangeEvent<HTMLInputElement>) =>
+//             handleChange("dueDate", e.target.value)
+//           }
+//           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+//         />
+//       </div>
+
+//       {/* Priority */}
+//       <div>
+//         <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+//           <FaFire /> Priority
+//         </label>
+//         <select
+//           value={formData.priority || ""}
+//           onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+//             handleChange("priority", e.target.value)
+//           }
+//           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+//         >
+//           <option value="">Select Priority</option>
+//           <option value="high">🔥 High</option>
+//           <option value="medium">⚖️ Medium</option>
+//           <option value="low">🧊 Low</option>
+//         </select>
+//       </div>
+
+//       {/* Assignee Name */}
+//       <div>
+//         <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+//           <FaUser /> Assignee Name
+//         </label>
+//         <input
+//           type="text"
+//           value={formData.assignee?.name || ""}
+//           onChange={(e: ChangeEvent<HTMLInputElement>) =>
+//             handleChange("assignee", {
+//               ...formData.assignee,
+//               name: e.target.value,
+//             })
+//           }
+//           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+//           placeholder="Assignee Name"
+//         />
+//       </div>
+
+//       {/* Assignee Email */}
+//       <div>
+//         <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+//           <FaEnvelope /> Assignee Email
+//         </label>
+//         <input
+//           type="email"
+//           value={formData.assignee?.email || ""}
+//           onChange={(e: ChangeEvent<HTMLInputElement>) =>
+//             handleChange("assignee", {
+//               ...formData.assignee,
+//               email: e.target.value,
+//             })
+//           }
+//           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+//           placeholder="Assignee Email"
+//         />
+//       </div>
 
 //       {/* Custom Fields */}
-//       {[
-//         { label: "🏪 Shop Name", key: "shopName" },
-//         { label: "🏷️ Outlet Name", key: "outletName" },
-//         { label: "📞 Phone", key: "phone" },
-//         { label: "📧 Email", key: "email" },
-//         { label: "📍 Location", key: "location" },
-//         { label: "🏦 Account Number", key: "accountNumber" },
-//         { label: "🔢 IFSC Code", key: "ifscCode" },
-//       ].map(({ label, key }) => (
-//         <div key={key}>{renderField(label, key)}</div>
-//       ))}
+//       {formData.customFields &&
+//         Object.entries(formData.customFields).map(([key, value]) => (
+//           <div key={key}>
+//             <label className="block text-purple-800 font-semibold mb-1 capitalize">
+//               {key.replace(/([A-Z])/g, " $1")}
+//             </label>
+//             <input
+//               value={value}
+//               onChange={(e: ChangeEvent<HTMLInputElement>) =>
+//                 handleCustomChange(key, e.target.value)
+//               }
+//               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+//               placeholder={key}
+//             />
+//           </div>
+//         ))}
+
+//       {/* Save Button */}
+//       <div className="pt-3 text-right">
+//         <button
+//           onClick={handleSave}
+//           className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
+//         >
+//           <FaSave /> Save Changes
+//         </button>
+//       </div>
 //     </div>
 //   );
 // }
@@ -119,117 +350,170 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
-import React, { useState } from "react";
-
-type Task = {
-  id: string;
-  title: string;
-  description?: string;
-  dueDate?: string;
-  priority?: string;
-  tags?: string[];
-  subtasks?: { title: string }[];
-  assigner?: { name?: string; email?: string };
-  assignee?: { name?: string; email?: string };
-  customFields?: Record<string, any>;
-};
+import React, { useState, ChangeEvent } from "react";
+import { FaCalendarAlt, FaFire, FaUser, FaEnvelope, FaSave } from "react-icons/fa";
+import { Task } from "../../types/task"; // ✅ Shared Task type
 
 interface Props {
   task: Task;
-  onUpdate: (updatedTask: Task) => void;
+  onUpdate: (updatedTask: Task) => Promise<void>;
 }
 
 export default function TaskEditableCard({ task, onUpdate }: Props) {
   const [formData, setFormData] = useState<Task>({ ...task });
 
-  const handleChange = (key: string, value: any) => {
+  const handleChange = (key: keyof Task, value: string | object) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleCustomChange = (key: string, value: any) => {
+  const handleCustomChange = (key: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      customFields: { ...prev.customFields, [key]: value },
+      customFields: {
+        ...prev.customFields,
+        [key]: value,
+      },
     }));
   };
 
-  const handleSave = () => {
-    onUpdate(formData);
+  const handleSave = async () => {
+    await onUpdate(formData);
   };
 
   return (
-    <div className="space-y-2 text-sm text-gray-800">
-      <input
-        value={formData.title}
-        onChange={(e) => handleChange("title", e.target.value)}
-        className="w-full px-2 py-1 border rounded"
-        placeholder="Task title"
-      />
+    <div className="space-y-4 text-sm text-gray-800 p-5 bg-gradient-to-br from-purple-50 to-white rounded-xl shadow border border-purple-200">
+      {/* Title */}
+      <div>
+        <label className="block text-purple-800 font-semibold mb-1">📝 Title</label>
+        <input
+          value={formData.title}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange("title", e.target.value)}
+          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+          placeholder="Task title"
+        />
+      </div>
 
-      <textarea
-        value={formData.description || ""}
-        onChange={(e) => handleChange("description", e.target.value)}
-        className="w-full px-2 py-1 border rounded"
-        placeholder="Description"
-      />
+      {/* Description */}
+      <div>
+        <label className="block text-purple-800 font-semibold mb-1">📄 Description</label>
+        <textarea
+          value={formData.description || ""}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange("description", e.target.value)}
+          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+          placeholder="Description"
+        />
+      </div>
 
-      <input
-        type="date"
-        value={formData.dueDate || ""}
-        onChange={(e) => handleChange("dueDate", e.target.value)}
-        className="w-full px-2 py-1 border rounded"
-      />
+      {/* Due Date */}
+      <div>
+        <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+          <FaCalendarAlt /> Due Date
+        </label>
+        <input
+          type="date"
+          value={formData.dueDate || ""}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange("dueDate", e.target.value)}
+          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+        />
+      </div>
 
-      <select
-        value={formData.priority || ""}
-        onChange={(e) => handleChange("priority", e.target.value)}
-        className="w-full px-2 py-1 border rounded"
-      >
-        <option value="">Select Priority</option>
-        <option value="high">🔥 High</option>
-        <option value="medium">⚖️ Medium</option>
-        <option value="low">🧊 Low</option>
-      </select>
+      {/* Priority */}
+      <div>
+        <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+          <FaFire /> Priority
+        </label>
+        <select
+          value={formData.priority || ""}
+          onChange={(e: ChangeEvent<HTMLSelectElement>) => handleChange("priority", e.target.value)}
+          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+        >
+          <option value="">Select Priority</option>
+          <option value="high">🔥 High</option>
+          <option value="medium">⚖️ Medium</option>
+          <option value="low">🧊 Low</option>
+        </select>
+      </div>
 
-      <input
-        type="text"
-        value={formData.assignee?.name || ""}
-        onChange={(e) =>
-          handleChange("assignee", { ...formData.assignee, name: e.target.value })
-        }
-        className="w-full px-2 py-1 border rounded"
-        placeholder="Assignee Name"
-      />
+      {/* Assignee Name */}
+      <div>
+        <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+          <FaUser /> Assignee Name
+        </label>
+        <input
+          type="text"
+          value={formData.assignee?.name || ""}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            handleChange("assignee", {
+              ...formData.assignee,
+              name: e.target.value,
+            })
+          }
+          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+          placeholder="Assignee Name"
+        />
+      </div>
 
-      <input
-        type="email"
-        value={formData.assignee?.email || ""}
-        onChange={(e) =>
-          handleChange("assignee", { ...formData.assignee, email: e.target.value })
-        }
-        className="w-full px-2 py-1 border rounded"
-        placeholder="Assignee Email"
-      />
+      {/* Assignee Email */}
+      <div>
+        <label className="block text-purple-800 font-semibold mb-1 flex items-center gap-2">
+          <FaEnvelope /> Assignee Email
+        </label>
+        <input
+          type="email"
+          value={formData.assignee?.email || ""}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            handleChange("assignee", {
+              ...formData.assignee,
+              email: e.target.value,
+            })
+          }
+          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+          placeholder="Assignee Email"
+        />
+      </div>
 
+      {/* Custom Fields */}
       {formData.customFields &&
         Object.entries(formData.customFields).map(([key, value]) => (
-          <input
-            key={key}
-            value={value}
-            onChange={(e) => handleCustomChange(key, e.target.value)}
-            className="w-full px-2 py-1 border rounded"
-            placeholder={key}
-          />
+          <div key={key}>
+            <label className="block text-purple-800 font-semibold mb-1 capitalize">
+              {key.replace(/([A-Z])/g, " $1")}
+            </label>
+            <input
+              value={value}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                handleCustomChange(key, e.target.value)
+              }
+              className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-400"
+              placeholder={key}
+            />
+          </div>
         ))}
 
-      <button
-        onClick={handleSave}
-        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        💾 Save
-      </button>
+      {/* Save Button */}
+      <div className="pt-3 text-right">
+        <button
+          onClick={handleSave}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
+        >
+          <FaSave /> Save Changes
+        </button>
+      </div>
     </div>
   );
 }
