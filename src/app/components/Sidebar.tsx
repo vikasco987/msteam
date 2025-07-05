@@ -277,6 +277,7 @@ const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { label: 'Team Board', icon: Users, href: '/team-board' },
   { label: 'Create Task', icon: LayoutDashboard, href: '/create-task' },
+  { label: 'Report', icon: LayoutDashboard, href: '/report' },
   { label: 'Logout', icon: LogOut, href: '/logout' },
 ];
 
