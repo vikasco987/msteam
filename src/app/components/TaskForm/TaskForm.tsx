@@ -643,22 +643,42 @@ export default function TaskForm() {
         })
       );
 
+      // const payload = {
+      //   title,
+      //   assigneeId,
+      //   activeTab,
+      //   attachments,
+      //   tags: [],
+      //   customFields: {
+      //     phone,
+      //     email,
+      //     shopName,
+      //     location,
+      //     accountNumber,
+      //     ifscCode,
+      //     fields: uploadedCustomFields,
+      //   },
+      // };
+
+
       const payload = {
-        title,
-        assigneeId,
-        activeTab,
-        attachments,
-        tags: [],
-        customFields: {
-          phone,
-          email,
-          shopName,
-          location,
-          accountNumber,
-          ifscCode,
-          fields: uploadedCustomFields,
-        },
-      };
+  title,
+  assigneeId,
+  assigneeEmail: email, // ✅ Add this line
+  activeTab,
+  attachments,
+  tags: [],
+  customFields: {
+    phone,
+    email,
+    shopName,
+    location,
+    accountNumber,
+    ifscCode,
+    fields: uploadedCustomFields,
+  },
+};
+
 
       const res = await fetch("/api/tasks", {
         method: "POST",

@@ -1,35 +1,64 @@
-// src/types/task.ts
+// export type Task = {
+//   id: string;
+//   title: string;
+//   status: string;
+//   createdAt: string;
+//   updatedAt?: string;
+//   tags: string[];
+//   assigneeId?: string;
+//   assigneeEmail?: string;
+//   assignerEmail?: string;
+//   assignerName?: string;
+//   customFields?: Record<string, any>;
+//   attachments: string[];
+//   dueDate?: string;
+//   priority?: string;
+//   projectId?: string;
+//   createdByClerkId: string;
+
+//   subtasks: any[];
+
+//   // ✅ Added for enrichment
+//   assignee?: {
+//     name: string;
+//     email: string;
+//   };
+// };
+
+
+
+
+
+
+
+export type CustomFieldValue = string | number | boolean | null | undefined;
+export type CustomFields = { [key: string]: CustomFieldValue };
+
+export type Subtask = {
+  title: string;
+  isCompleted?: boolean;
+};
+
 export type Task = {
   id: string;
   title: string;
-  description?: string;
   status: string;
+  createdAt: string;
+  updatedAt?: string;
+  tags: string[];
+  assigneeId?: string;
+  assigneeEmail?: string;
+  assignerEmail?: string;
+  assignerName?: string;
+  customFields?: CustomFields;
+  attachments: string[];
   dueDate?: string;
   priority?: string;
-  tags?: string[];
-  subtasks?: { title: string }[];
-  assigner?: {
-    id?: string;
-    name?: string;
-    email?: string;
-  };
+  projectId?: string;
+  createdByClerkId: string;
+  subtasks: Subtask[];
   assignee?: {
-    id?: string;
-    name?: string;
-    email?: string;
+    name: string;
+    email: string;
   };
-  assigneeId?: string;
-  createdByClerkId?: string;
-  updatedAt?: string;
-  createdAt?: string;
-  customFields?: {
-    shopName?: string;
-    outletName?: string;
-    phone?: string;
-    email?: string;
-    location?: string;
-    accountNumber?: string;
-    ifscCode?: string;
-  };
-  attachments?: string[];
 };

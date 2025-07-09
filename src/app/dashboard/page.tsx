@@ -1,365 +1,108 @@
-
-
-
-// 'use server';
-
-// import { auth, currentUser } from '@clerk/nextjs/server';
-// import clerk from '@clerk/clerk-sdk-node';
-// import { prisma } from '../../../lib/prisma';
-
-// type ExtendedTask = {
-//   id: string;
-//   title: string;
-//   status: string;
-//   dueDate: string | null;
-//   assigneeId?: string | null;
-//   createdBy?: string;
-//   createdAt: Date;
-//   assigneeName?: string;
-// };
-
-// export default async function DashboardPage() {
-//   const { userId } = await auth();
-
-//   if (!userId) {
-//     return <div className="p-6">Please sign in to access the dashboard.</div>;
-//   }
-
-//   const user = await currentUser();
-//   const role = String(user?.publicMetadata?.role || 'user');
-
-//   const tasks = await prisma.task.findMany({
-//     where:
-//       role === 'admin'
-//         ? {}
-//         : {
-//             OR: [{ assigneeId: userId }, { createdBy: userId }],
-//           },
-//     orderBy: { createdAt: 'desc' },
-//   });
-
-//   let taskList: ExtendedTask[] = tasks.map((task) => ({
-//     ...task,
-//     dueDate: task.dueDate ? task.dueDate.toISOString() : null, // ✅ convert Date to string
-//   }));
-
-//   if (role === 'admin') {
-//     const userIds = [...new Set(tasks.map((t) => t.assigneeId).filter(Boolean))];
-//     const usersMap: Record<string, string> = {};
-
-//     for (const id of userIds) {
-//       try {
-//         const assignee = await clerk.users.getUser(id!);
-//         usersMap[id!] =
-//           assignee.firstName ||
-//           assignee.username ||
-//           assignee.emailAddresses[0]?.emailAddress ||
-//           id;
-//       } catch {
-//         usersMap[id!] = id!;
-//       }
-//     }
-
-//     taskList = taskList.map((task) => ({
-//       ...task,
-//       assigneeName: task.assigneeId ? usersMap[task.assigneeId] : 'Unassigned',
-//     }));
-//   }
-
-//   return (
-//     <div className="p-6">
-//       <h1 className="text-2xl font-bold mb-2">
-//         Welcome, {user?.firstName} ({role})
-//       </h1>
-
-//       <p className="text-gray-600 mb-4">
-//         Your email: {user?.emailAddresses[0]?.emailAddress}
-//       </p>
-
-//       {role === 'admin' ? (
-//         <div className="mt-4 p-4 bg-blue-100 border border-blue-300 rounded">
-//           🔥 <strong>Admin Board:</strong> View & manage all tasks
-//         </div>
-//       ) : (
-//         <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded">
-//           👤 <strong>User Board:</strong> View your personal tasks
-//         </div>
-//       )}
-
-//       <div className="mt-6">
-//         <h2 className="text-xl font-semibold mb-3">🗂️ Tasks</h2>
-//         {taskList.length === 0 ? (
-//           <p>No tasks found.</p>
-//         ) : (
-//           <ul className="space-y-3">
-//             {taskList.map((task) => (
-//               <li key={task.id} className="p-4 border rounded bg-white">
-//                 <div className="flex justify-between items-center">
-//                   <strong>{task.title}</strong>
-//                   <span className="text-sm text-gray-500">{task.status}</span>
-//                 </div>
-//                 <div className="text-sm text-gray-500 mt-1">
-//                   Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}
-//                   {role === 'admin' && task.assigneeName && (
-//                     <span className="ml-2 italic">| Assigned to: {task.assigneeName}</span>
-//                   )}
-//                 </div>
-//               </li>
-//             ))}
-//           </ul>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-//corect
-
-// 'use server';
-
-// import { auth, currentUser } from '@clerk/nextjs/server';
-// import { clerkClient } from '@clerk/clerk-sdk-node'// ✅ correct import
-// import { prisma } from '../../../lib/prisma';
-
-// type ExtendedTask = {
-//   id: string;
-//   title: string;
-//   status: string;
-//   dueDate: string | null;
-//   assigneeId?: string | null;
-//   createdBy?: string;
-//   createdAt: Date;
-//   assigneeName?: string;
-// };
-
-// export default async function DashboardPage() {
-//   const { userId } = await auth();
-
-//   if (!userId) {
-//     return <div className="p-6">Please sign in to access the dashboard.</div>;
-//   }
-
-//   const user = await currentUser();
-//   const role = String(user?.publicMetadata?.role || 'user');
-
-//   const tasks = await prisma.task.findMany({
-//     where:
-//       role === 'admin'
-//         ? {}
-//         : {
-//             OR: [{ assigneeId: userId }, { createdBy: userId }],
-//           },
-//     orderBy: { createdAt: 'desc' },
-//   });
-
-//   let taskList: ExtendedTask[] = tasks.map((task) => ({
-//     ...task,
-//     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
-//   }));
-
-//   if (role === 'admin') {
-//     const userIds = [...new Set(tasks.map((t) => t.assigneeId).filter(Boolean))];
-//     const usersMap: Record<string, string> = {};
-
-//     for (const id of userIds) {
-//       try {
-//         const assignee = await clerkClient.users.getUser(id!); // ✅ fixed usage
-//         usersMap[id!] =
-//           assignee.firstName ??
-//           assignee.username ??
-//           assignee.emailAddresses[0]?.emailAddress ??
-//           id!;
-//       } catch {
-//         usersMap[id!] = id!;
-//       }
-//     }
-
-//     taskList = taskList.map((task) => ({
-//       ...task,
-//       assigneeName: task.assigneeId ? usersMap[task.assigneeId] : 'Unassigned',
-//     }));
-//   }
-
-//   return (
-//     <div className="p-6">
-//       <h1 className="text-2xl font-bold mb-2">
-//         Welcome, {user?.firstName} ({role})
-//       </h1>
-
-//       <p className="text-gray-600 mb-4">
-//         Your email: {user?.emailAddresses[0]?.emailAddress}
-//       </p>
-
-//       {role === 'admin' ? (
-//         <div className="mt-4 p-4 bg-blue-100 border border-blue-300 rounded">
-//           🔥 <strong>Admin Board:</strong> View & manage all tasks
-//         </div>
-//       ) : (
-//         <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded">
-//           👤 <strong>User Board:</strong> View your personal tasks
-//         </div>
-//       )}
-
-//       <div className="mt-6">
-//         <h2 className="text-xl font-semibold mb-3">🗂️ Tasks</h2>
-//         {taskList.length === 0 ? (
-//           <p>No tasks found.</p>
-//         ) : (
-//           <ul className="space-y-3">
-//             {taskList.map((task) => (
-//               <li key={task.id} className="p-4 border rounded bg-white">
-//                 <div className="flex justify-between items-center">
-//                   <strong>{task.title}</strong>
-//                   <span className="text-sm text-gray-500">{task.status}</span>
-//                 </div>
-//                 <div className="text-sm text-gray-500 mt-1">
-//                   Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}
-//                   {role === 'admin' && task.assigneeName && (
-//                     <span className="ml-2 italic">| Assigned to: {task.assigneeName}</span>
-//                   )}
-//                 </div>
-//               </li>
-//             ))}
-//           </ul>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-
-
-
-
-
-// import { createClerkClient } from "@clerk/backend";
-// import { NextResponse } from "next/server";
-
-// const secret = process.env.CLERK_SECRET_KEY;
-
-// if (!secret) {
-//   console.error("❌ Missing CLERK_SECRET_KEY in environment variables!");
-// }
-
-// const clerk = secret ? createClerkClient({ secretKey: secret }) : null;
-
-// export async function GET() {
-//   if (!clerk) {
-//     return NextResponse.json(
-//       { error: "Server misconfigured: Clerk client not initialized" },
-//       { status: 500 }
-//     );
-//   }
-
-//   try {
-//     const users = await clerk.users.getUserList();
-
-//     const formatted = users.map((user) => ({
-//       id: user.id,
-//       email: user.emailAddresses[0]?.emailAddress || "no-email",
-//       name:
-//         [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-//         user.username ||
-//         "Unnamed User",
-//     }));
-
-//     return NextResponse.json(formatted);
-//   } catch (err) {
-//     console.error("❌ Error fetching Clerk users:", err);
-//     return NextResponse.json(
-//       { error: "Failed to fetch team members" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-
-
-
-
-// // src/app/dashboard/page.tsx
-
-// import React from "react";
-// import Board from "../components/Board";
-//  // adjust path if needed
-
-// export default function DashboardPage() {
-//   return (
-//     <main className="p-4">
-//       <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-//       <Board />
-//     </main>
-//   );
-// }
-
-
-
-
-
-
-
-
-// // src/app/dashboard/page.tsx
-
-// import React from "react";
-// import Board from "../components/Board";
-//  // adjust path if needed
-
-// export default function DashboardPage() {
-//   return (
-//     <main className="p-4">
-//       <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-//       <Board />
-//     </main>
-//   );
-// }
-
-
-
-
-
-
-// src/app/dashboard/page.tsx
-
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Board from "../components/Board";
-import TaskTableView from "../components/TaskTableView"; // ✅ Adjust path if needed
-import { Task } from "@/types/task"; // ✅ Ensure path is correct
+import { useUser } from "@clerk/nextjs";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
+type UserStat = {
+  userName: string;
+  email: string;
+  taskCount: number;
+  completedCount: number;
+};
 
 export default function DashboardPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { user } = useUser();
+  const [userStats, setUserStats] = useState<UserStat[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    new Date().toISOString().slice(0, 7)
+  );
 
   useEffect(() => {
-    // Fetch tasks from your API
-    const fetchTasks = async () => {
+    const fetchStats = async () => {
       try {
-        const res = await fetch("/api/tasks");
+        const res = await fetch(`/api/stats/user-performance?month=${selectedMonth}`);
         const data = await res.json();
-        setTasks(data);
+        setUserStats(data);
       } catch (err) {
-        console.error("Failed to fetch tasks:", err);
+        console.error("Failed to fetch stats:", err);
       }
     };
 
-    fetchTasks();
-  }, []);
+    fetchStats();
+  }, [selectedMonth]);
+
+  const totalTasks = userStats.reduce((sum, u) => sum + u.taskCount, 0);
+  const completedTasks = userStats.reduce((sum, u) => sum + u.completedCount, 0);
+  const completionRate = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+  const mostActive =
+    userStats.length > 0
+      ? userStats.reduce((prev, curr) =>
+          curr.taskCount > prev.taskCount ? curr : prev
+        )
+      : { userName: "N/A", taskCount: 0 };
+
+  const email =
+    typeof user?.emailAddresses?.[0]?.emailAddress === "string"
+      ? user.emailAddresses[0].emailAddress
+      : "Unknown";
 
   return (
-    <main className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold mb-4">Dashboard Overview</h1>
 
-      {/* ✅ Kanban Board */}
-      <Board />
+      <p className="text-sm text-gray-500 mb-4">
+        Logged in as: {user?.username || email} ({String(user?.publicMetadata?.role || "user")})
+      </p>
 
-      {/* ✅ Task Table View */}
-      <h2 className="text-xl font-semibold mt-8 mb-2">📋 All Tasks (Table View)</h2>
-      <TaskTableView tasks={tasks} />
-    </main>
+      <div className="mb-4">
+        <label className="text-sm text-gray-600">Select Month: </label>
+        <input
+          type="month"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="ml-2 px-2 py-1 border rounded"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow p-4">
+          <h3 className="text-lg font-semibold">📌 Total Tasks</h3>
+          <p className="text-2xl">{totalTasks}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow p-4">
+          <h3 className="text-lg font-semibold">✅ Completion Rate</h3>
+          <p className="text-2xl">{completionRate}%</p>
+        </div>
+        <div className="bg-white rounded-xl shadow p-4">
+          <h3 className="text-lg font-semibold">🏆 Most Active</h3>
+          <p className="text-lg">
+            {mostActive.userName} ({mostActive.taskCount} tasks)
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow p-4 h-96">
+        <h2 className="text-xl font-semibold mb-4">📊 User Task Comparison</h2>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={userStats}>
+            <XAxis dataKey="userName" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="taskCount" fill="#8884d8" name="Total Tasks" />
+            <Bar dataKey="completedCount" fill="#82ca9d" name="Completed Tasks" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }

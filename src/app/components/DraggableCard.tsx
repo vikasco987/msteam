@@ -23,3 +23,4 @@ export default function DraggableCard({ id, title }: { id: string; title: string
     </div>
   );
 }
+

@@ -553,7 +553,162 @@ async function isAdmin(userId: string): Promise<boolean> {
   }
 }
 
-// ✅ POST: Create new task
+// // ✅ POST: Create new task
+// export async function POST(req: NextRequest) {
+//   try {
+//     const { userId } = await getAuth(req);
+//     if (!userId) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const body = await req.json();
+
+//     if (!body.title || !body.assigneeId) {
+//       return NextResponse.json(
+//         { error: "Missing title or assigneeId" },
+//         { status: 400 }
+//       );
+//     }
+
+//     const clerkUser = await users.getUser(userId);
+//     const assignerEmail = clerkUser.emailAddresses?.[0]?.emailAddress || "unknown";
+//     const assignerName = clerkUser.firstName || clerkUser.username || "Unknown";
+
+//     // ✅ Default task status to "todo"
+//     const status = "todo" as const;
+
+//     const {
+//       phone = "",
+//       email = "",
+//       shopName = "",
+//       outletName = "",
+//       location = "",
+//       accountNumber = "",
+//       ifscCode = "",
+//       fields = [],
+//     } = body.customFields || {};
+
+//     const task = await prisma.task.create({
+//       data: {
+//         title: body.title,
+//         status,
+//         assigneeId: body.assigneeId,
+//         assignerEmail: body.assignerEmail || assignerEmail,
+//         assignerName: body.assignerName || assignerName,
+//         assigneeEmail: body.assigneeEmail || null,
+//         customFields: {
+//           phone,
+//           email,
+//           shopName,
+//           outletName,
+//           location,
+//           accountNumber,
+//           ifscCode,
+//           fields,
+//         },
+//         attachments: Array.isArray(body.attachments) ? body.attachments : [],
+//         tags: Array.isArray(body.tags) ? body.tags : [],
+//         priority: body.priority ?? null,
+//         dueDate: body.dueDate ? new Date(body.dueDate) : null,
+//         createdByClerkId: userId,
+//         createdAt: new Date(),
+//         updatedAt: new Date(),
+//       },
+//     });
+
+//     console.log("✅ Task created:", task.id);
+//     return NextResponse.json({ success: true, task }, { status: 201 });
+
+//   } catch (err: unknown) {
+//     const error = err instanceof Error ? err.message : "Unknown error";
+//     console.error("❌ POST /api/tasks error:", err);
+//     return NextResponse.json(
+//       { error: "Server error", details: error },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// ✅ GET: Fetch tasks
+// 
+// ✅ GET: Fetch tasks
+// export async function GET(req: NextRequest) {
+//   try {
+//     const { userId } = await getAuth(req);
+//     if (!userId) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const userIsAdmin = await isAdmin(userId);
+
+//     const tasks = await prisma.task.findMany({
+//       where: userIsAdmin ? {} : { assigneeId: userId },
+//       include: { subtasks: true },
+//       orderBy: { createdAt: "desc" },
+//     });
+
+//     // 🔍 Collect all assigner + assignee emails
+//     const allEmails = Array.from(
+//       new Set(
+//         tasks
+//           .flatMap((t) => [t.assignerEmail, t.assigneeEmail])
+//           .filter(Boolean)
+//       )
+//     );
+
+//     // 🧠 Fetch Clerk user info by email
+//     const userMap: Record<string, string> = {};
+//     for (const email of allEmails) {
+//       try {
+//         const res = await users.getUserList({ emailAddress: [email!] });
+//         if (res.length > 0) {
+//           const u = res[0];
+//           userMap[email!] = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Unknown";
+//         } else {
+//           userMap[email!] = "Unknown";
+//         }
+//       } catch {
+//         userMap[email!] = "Unknown";
+//       }
+//     }
+
+//     // ✅ Enhance tasks with names
+//     const enrichedTasks = tasks.map((task) => ({
+//       ...task,
+//       assignerName: userMap[task.assignerEmail ?? ""] ?? task.assignerName ?? "—",
+//       assignee: {
+//         email: task.assigneeEmail ?? "",
+//         name: userMap[task.assigneeEmail ?? ""] ?? "—",
+//       },
+//     }));
+
+//     console.log(
+//       `📄 GET /api/tasks – ${userIsAdmin ? "Admin" : "User"} fetched ${enrichedTasks.length} tasks`
+//     );
+
+//     return NextResponse.json({ tasks: enrichedTasks }, { status: 200 });
+
+//   } catch (err: unknown) {
+//     const error = err instanceof Error ? err.message : "Unknown error";
+//     console.error("❌ GET /api/tasks error:", err);
+//     return NextResponse.json(
+//       { error: "Failed to fetch tasks", details: error },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+// // ✅ OPTIONS (for CORS preflight)
+// export async function OPTIONS() {
+//   return NextResponse.json({ ok: true });
+// }
+
+
+
+
+
+
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await getAuth(req);
@@ -570,9 +725,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 👤 Assigner details
     const clerkUser = await users.getUser(userId);
     const assignerEmail = clerkUser.emailAddresses?.[0]?.emailAddress || "unknown";
     const assignerName = clerkUser.firstName || clerkUser.username || "Unknown";
+
+    // 👤 Assignee details (from body.assigneeId)
+    let assigneeEmail = "";
+    let assigneeName = "";
+
+    try {
+      const assigneeUser = await users.getUser(body.assigneeId);
+      assigneeEmail = assigneeUser.emailAddresses?.[0]?.emailAddress || "";
+      assigneeName =
+        `${assigneeUser.firstName || ""} ${assigneeUser.lastName || ""}`.trim() ||
+        assigneeUser.username ||
+        "Unknown";
+    } catch (err) {
+      console.warn("⚠️ Failed to fetch assignee from Clerk:", err);
+    }
 
     // ✅ Default task status to "todo"
     const status = "todo" as const;
@@ -593,9 +764,10 @@ export async function POST(req: NextRequest) {
         title: body.title,
         status,
         assigneeId: body.assigneeId,
-        assignerEmail: body.assignerEmail || assignerEmail,
-        assignerName: body.assignerName || assignerName,
-        assigneeEmail: body.assigneeEmail || null,
+        assigneeEmail,
+        assigneeName, // ✅ Now saving to DB
+        assignerEmail,
+        assignerName,
         customFields: {
           phone,
           email,
@@ -629,7 +801,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ✅ GET: Fetch tasks
+
+
+
+
 export async function GET(req: NextRequest) {
   try {
     const { userId } = await getAuth(req);
@@ -645,8 +820,50 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    console.log(`📄 GET /api/tasks – ${userIsAdmin ? "Admin" : "User"} fetched ${tasks.length} tasks`);
-    return NextResponse.json({ tasks }, { status: 200 });
+    // Collect all assigner and assignee IDs to fetch from Clerk
+    const userIds = Array.from(
+      new Set(
+        tasks.flatMap((t) => [t.assignerEmail, t.assigneeEmail]).filter(Boolean)
+      )
+    );
+
+    // Map Clerk user email to name
+    const userMap: Record<string, { name: string; email: string }> = {};
+
+    for (const email of userIds) {
+      try {
+        const res = await users.getUserList({ emailAddress: [email!] });
+        if (res.length > 0) {
+          const u = res[0];
+          const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Unnamed";
+          userMap[email!] = { name, email: email! };
+        }
+      } catch (err) {
+        console.warn(`⚠️ Failed to fetch user ${email}:`, err);
+        userMap[email!] = { name: "Unknown", email: email! };
+      }
+    }
+
+    // Enrich each task
+    const enrichedTasks = tasks.map((task) => {
+      const assignerEmail = task.assignerEmail ?? "";
+      const assigneeEmail = task.assigneeEmail ?? "";
+
+      return {
+        ...task,
+        assignerName: userMap[assignerEmail]?.name || task.assignerName || "—",
+        assignee: {
+          email: assigneeEmail,
+          name: userMap[assigneeEmail]?.name || "—",
+        },
+      };
+    });
+
+    console.log(
+      `📄 GET /api/tasks – ${userIsAdmin ? "Admin" : "User"} fetched ${enrichedTasks.length} tasks`
+    );
+
+    return NextResponse.json({ tasks: enrichedTasks }, { status: 200 });
 
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : "Unknown error";
@@ -658,7 +875,15 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ✅ OPTIONS (for CORS preflight)
+
+
+
+
+
+
+
+
+
 export async function OPTIONS() {
-  return NextResponse.json({ ok: true });
-}
+   return NextResponse.json({ ok: true });
+ }

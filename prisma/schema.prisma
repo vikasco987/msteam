@@ -20,6 +20,7 @@ model Task {
   assignerEmail String?
    assigneeEmail  String?  
   assignerName  String?
+   assigneeName  String?  
   attachments   String[]  @default([])
   customFields  Json?
   createdAt     DateTime  @default(now())
