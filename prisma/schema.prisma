@@ -1,5 +1,3 @@
-// ✅ Full Working Schema without User model
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,27 +8,52 @@ datasource db {
 }
 
 model Task {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  status        String
-  tags          String[]  @default([])
-  dueDate       DateTime?
-  priority      String?
-  projectId     String?
-  assignerEmail String?
-   assigneeEmail  String?  
-  assignerName  String?
-   assigneeName  String?  
-  attachments   String[]  @default([])
-  customFields  Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime?
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  status          String
+  tags            String[] @default([])
+  dueDate         DateTime?
+  priority        String?
+  projectId       String?
+  assignerEmail   String?
+  assigneeEmail   String?
+  assignerName    String?
+  assigneeName    String?
+  attachments     String[] @default([])
+  customFields    Json?
 
-  // Clerk User IDs
-  assigneeId       String? // Clerk user ID
-  createdByClerkId String // Clerk user ID (required)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime?
 
-  subtasks Subtask[]
+  assigneeId       String?     
+  assigneeIds      String[]    @default([])
+  createdByClerkId String
+
+  phone            String?
+  email            String?
+  shopName         String?
+  location         String?
+  accountNumber    String?
+  ifscCode         String?
+  restId           String?
+  customerName     String?
+  outletName       String?
+  packageAmount    String?
+  startDate        String?
+  endDate          String?
+  timeline         String?
+
+  aadhaarUrl       String?
+  panUrl           String?
+  selfieUrl        String?
+  chequeUrl        String?
+  menuCardUrls     String[] @default([])
+
+  /// ✅ One-to-many relation with notes
+  notes            Note[]
+
+  /// ✅ One-to-many relation with subtasks
+  subtasks         Subtask[] @relation("TaskSubtasks")
 }
 
 model Subtask {
@@ -38,6 +61,18 @@ model Subtask {
   title     String
   completed Boolean @default(false)
 
-  taskId String @db.ObjectId
+  taskId    String  @db.ObjectId
+  task      Task    @relation("TaskSubtasks", fields: [taskId], references: [id])
+}
+
+model Note {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  content     String
+  createdAt   DateTime @default(now())
+
+  authorName  String?
+  authorEmail String?
+
   task   Task   @relation(fields: [taskId], references: [id])
+  taskId String @db.ObjectId
 }

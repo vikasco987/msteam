@@ -549,6 +549,1397 @@
 
 
 
+// "use client";
+
+// import React, { useEffect, useState } from "react";
+// import BasicInfoStep from "./BasicInfoStep";
+// import UploadsStep from "./UploadsStep";
+// import CustomFieldsStep from "./CustomFieldsStep";
+// import { uploadToCloudinary } from "./utils";
+
+// type CustomField = {
+//   label: string;
+//   value: string;
+//   files: File[];
+// };
+
+// type TabType = "license" | "swiggy" | "zomato";
+// const LOCAL_STORAGE_KEY = "onboarding-task-form";
+
+// export default function TaskForm() {
+//   const [title, setTitle] = useState("Zomato Onboarding");
+//   const [assigneeId, setAssigneeId] = useState("");
+//   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+//   const [step, setStep] = useState(0);
+//   const [activeTab, setActiveTab] = useState<TabType>("license");
+
+//   const [aadhaarFile, setAadhaarFile] = useState<File[]>([]);
+//   const [panFile, setPanFile] = useState<File[]>([]);
+//   const [selfieFile, setSelfieFile] = useState<File[]>([]);
+//   const [chequeFile, setChequeFile] = useState<File[]>([]);
+//   const [menuCardFiles, setMenuCardFiles] = useState<File[]>([]);
+
+//   const [phone, setPhone] = useState("");
+//   const [email, setEmail] = useState("");
+//   const [shopName, setShopName] = useState("");
+//   const [location, setLocation] = useState("");
+//   const [accountNumber, setAccountNumber] = useState("");
+//   const [ifscCode, setIfscCode] = useState("");
+
+//   const [loading, setLoading] = useState(false);
+//   const [uploading, setUploading] = useState(false);
+//   const [uploadStatus, setUploadStatus] = useState("");
+
+//   useEffect(() => {
+//     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+//     if (saved) {
+//       const parsed = JSON.parse(saved);
+//       setTitle(parsed.title || "");
+//       setAssigneeId(parsed.assigneeId || "");
+//       setCustomFields(parsed.customFields || []);
+//       setActiveTab(parsed.activeTab || "license");
+//       setStep(parsed.step || 0);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     const state = { title, assigneeId, customFields, activeTab, step };
+//     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+//   }, [title, assigneeId, customFields, activeTab, step]);
+
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     if (step < 2) return setStep(step + 1);
+
+//     setLoading(true);
+//     setUploading(true);
+//     setUploadStatus("");
+
+//     try {
+//       const staticFiles = [
+//         ...aadhaarFile,
+//         ...panFile,
+//         ...selfieFile,
+//         ...chequeFile,
+//         ...menuCardFiles,
+//       ].filter(Boolean);
+
+//       const attachments = await Promise.all(
+//         staticFiles.map((file) => uploadToCloudinary(file, setUploadStatus))
+//       );
+
+//       const uploadedCustomFields = await Promise.all(
+//         customFields.map(async (field) => {
+//           const urls: string[] = [];
+//           for (const file of field.files) {
+//             const url = await uploadToCloudinary(file, setUploadStatus);
+//             urls.push(url);
+//           }
+//           return {
+//             label: field.label,
+//             value: field.value,
+//             files: urls,
+//           };
+//         })
+//       );
+
+//       // const payload = {
+//       //   title,
+//       //   assigneeId,
+//       //   activeTab,
+//       //   attachments,
+//       //   tags: [],
+//       //   customFields: {
+//       //     phone,
+//       //     email,
+//       //     shopName,
+//       //     location,
+//       //     accountNumber,
+//       //     ifscCode,
+//       //     fields: uploadedCustomFields,
+//       //   },
+//       // };
+
+
+//       const payload = {
+//   title,
+//   assigneeId,
+//   assigneeEmail: email, // ✅ Add this line
+//   activeTab,
+//   attachments,
+//   tags: [],
+//   customFields: {
+//     phone,
+//     email,
+//     shopName,
+//     location,
+//     accountNumber,
+//     ifscCode,
+//     fields: uploadedCustomFields,
+//   },
+// };
+
+
+//       const res = await fetch("/api/tasks", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(payload),
+//       });
+
+//       const json = await res.json();
+
+//       if (!res.ok) {
+//         console.error("❌ Failed to create task:", json);
+//         alert("❌ Failed to create task");
+//         return;
+//       }
+
+//       console.log("✅ Task created:", json.task);
+//       alert("✅ Task created successfully");
+
+//       // Reset form
+//       setStep(0);
+//       setTitle("Zomato Onboarding");
+//       setAssigneeId("");
+//       setCustomFields([]);
+//       setAadhaarFile([]);
+//       setPanFile([]);
+//       setSelfieFile([]);
+//       setChequeFile([]);
+//       setMenuCardFiles([]);
+//       setPhone("");
+//       setEmail("");
+//       setShopName("");
+//       setLocation("");
+//       setAccountNumber("");
+//       setIfscCode("");
+//       localStorage.removeItem(LOCAL_STORAGE_KEY);
+//     } catch (err) {
+//       console.error("❌ Error in task submission", err);
+//       alert("❌ Error while submitting");
+//     } finally {
+//       setLoading(false);
+//       setUploading(false);
+//     }
+//   };
+
+//   return (
+//     <form
+//       onSubmit={handleSubmit}
+//       className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow"
+//     >
+//       <div className="flex justify-center gap-4 mb-6">
+//         {["Step 1", "Step 2", "Step 3"].map((label, idx) => (
+//           <button
+//             key={idx}
+//             type="button"
+//             onClick={() => setStep(idx)}
+//             className={`px-4 py-2 rounded ${
+//               step === idx ? "bg-purple-600 text-white" : "bg-gray-300"
+//             }`}
+//           >
+//             {label}
+//           </button>
+//         ))}
+//       </div>
+
+//       {step === 0 && (
+//         <BasicInfoStep
+//           title={title}
+//           assigneeId={assigneeId}
+//           activeTab={activeTab}
+//           setTitle={setTitle}
+//           setAssigneeId={setAssigneeId}
+//           setActiveTab={setActiveTab}
+//         />
+//       )}
+
+//       {step === 1 && (
+//         <UploadsStep
+//           activeTab={activeTab}
+//           aadhaarFile={aadhaarFile}
+//           panFile={panFile}
+//           selfieFile={selfieFile}
+//           chequeFile={chequeFile}
+//           menuCardFiles={menuCardFiles}
+//           phone={phone}
+//           email={email}
+//           shopName={shopName}
+//           location={location}
+//           accountNumber={accountNumber}
+//           ifscCode={ifscCode}
+//           setAadhaarFile={setAadhaarFile}
+//           setPanFile={setPanFile}
+//           setSelfieFile={setSelfieFile}
+//           setChequeFile={setChequeFile}
+//           setMenuCardFiles={setMenuCardFiles}
+//           setPhone={setPhone}
+//           setEmail={setEmail}
+//           setShopName={setShopName}
+//           setLocation={setLocation}
+//           setAccountNumber={setAccountNumber}
+//           setIfscCode={setIfscCode}
+//         />
+//       )}
+
+//       {step === 2 && (
+//         <CustomFieldsStep
+//           customFields={customFields}
+//           setCustomFields={setCustomFields}
+//         />
+//       )}
+
+//       {uploading && uploadStatus && (
+//         <p className="text-sm text-blue-600 mt-4 animate-pulse">{uploadStatus}</p>
+//       )}
+
+//       <div className="mt-6">
+//         {step < 2 ? (
+//           <button
+//             type="button"
+//             onClick={() => setStep(step + 1)}
+//             className="bg-purple-600 text-white px-6 py-2 rounded"
+//           >
+//             ➡️ Next
+//           </button>
+//         ) : (
+//           <button
+//             type="submit"
+//             className="bg-purple-600 text-white px-6 py-2 rounded w-full"
+//             disabled={loading}
+//           >
+//             {loading ? "Creating..." : "✅ Create Task"}
+//           </button>
+//         )}
+//       </div>
+//     </form>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// "use client";
+
+// import React, { useEffect, useState } from "react";
+// import BasicInfoStep from "./BasicInfoStep";
+// import UploadsStep from "./UploadsStep";
+// import CustomFieldsStep from "./CustomFieldsStep";
+// import { uploadToCloudinary } from "./utils";
+
+// type CustomField = {
+//   label: string;
+//   value: string;
+//   files: File[];
+// };
+
+// type TabType = "license" | "swiggy" | "zomato";
+// const LOCAL_STORAGE_KEY = "onboarding-task-form";
+
+// export default function TaskForm() {
+//   const [title, setTitle] = useState("Zomato Onboarding");
+//   const [assigneeId, setAssigneeId] = useState("");
+//   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+//   const [step, setStep] = useState(0);
+//   const [activeTab, setActiveTab] = useState<TabType>("license");
+
+//   const [aadhaarFile, setAadhaarFile] = useState<File[]>([]);
+//   const [panFile, setPanFile] = useState<File[]>([]);
+//   const [selfieFile, setSelfieFile] = useState<File[]>([]);
+//   const [chequeFile, setChequeFile] = useState<File[]>([]);
+//   const [menuCardFiles, setMenuCardFiles] = useState<File[]>([]);
+
+//   const [phone, setPhone] = useState("");
+//   const [email, setEmail] = useState("");
+//   const [shopName, setShopName] = useState("");
+//   const [location, setLocation] = useState("");
+//   const [accountNumber, setAccountNumber] = useState("");
+//   const [ifscCode, setIfscCode] = useState("");
+
+//   const [loading, setLoading] = useState(false);
+//   const [uploading, setUploading] = useState(false);
+//   const [uploadStatus, setUploadStatus] = useState("");
+
+//   useEffect(() => {
+//     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+//     if (saved) {
+//       const parsed = JSON.parse(saved);
+//       setTitle(parsed.title || "");
+//       setAssigneeId(parsed.assigneeId || "");
+//       setCustomFields(parsed.customFields || []);
+//       setActiveTab(parsed.activeTab || "license");
+//       setStep(parsed.step || 0);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     const state = { title, assigneeId, customFields, activeTab, step };
+//     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+//   }, [title, assigneeId, customFields, activeTab, step]);
+
+
+
+
+
+
+
+// const handleSubmit = async (e: React.FormEvent) => {
+//   e.preventDefault();
+//   if (step < 2) return setStep(step + 1);
+
+//   setLoading(true);
+//   setUploading(true);
+//   setUploadStatus("");
+
+//   try {
+//     // ✅ Fix: Prevent reusing already-read file streams
+//     const uploadedFileMap = new Map<string, string>(); // file.name -> url
+
+//     const uploadUniqueFile = async (file: File): Promise<string> => {
+//       if (uploadedFileMap.has(file.name)) {
+//         return uploadedFileMap.get(file.name)!;
+//       }
+//       const newFile = new File([file], file.name); // re-clone the File
+//       const url = await uploadToCloudinary(newFile, setUploadStatus);
+//       uploadedFileMap.set(file.name, url);
+//       return url;
+//     };
+
+//     const staticFiles = [
+//       ...aadhaarFile,
+//       ...panFile,
+//       ...selfieFile,
+//       ...chequeFile,
+//       ...menuCardFiles,
+//     ].filter(Boolean);
+
+//     const attachments = await Promise.all(
+//       staticFiles.map((file) =>
+//         uploadUniqueFile(file).catch((err) => {
+//           console.error("❌ Failed upload:", file.name, err);
+//           throw new Error(`Failed to upload ${file.name}`);
+//         })
+//       )
+//     );
+
+//     const uploadedCustomFields = await Promise.all(
+//       customFields.map(async (field) => {
+//         const urls: string[] = [];
+//         for (const file of field.files) {
+//           const url = await uploadUniqueFile(file);
+//           urls.push(url);
+//         }
+//         return {
+//           label: field.label,
+//           value: field.value,
+//           files: urls,
+//         };
+//       })
+//     );
+
+//     const payload = {
+//       title,
+//       assigneeId,
+//       assigneeEmail: email,
+//       activeTab,
+//       attachments,
+//       tags: [],
+//       customFields: {
+//         phone,
+//         email,
+//         shopName,
+//         location,
+//         accountNumber,
+//         ifscCode,
+//         fields: uploadedCustomFields,
+//       },
+//     };
+
+//     const res = await fetch("/api/tasks", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(payload),
+//     });
+
+//     const json = await res.json();
+
+//     if (!res.ok) {
+//       console.error("❌ Failed to create task:", json);
+//       alert("❌ Failed to create task");
+//       return;
+//     }
+
+//     console.log("✅ Task created:", json.task);
+//     alert("✅ Task created successfully");
+
+//     // Reset form
+//     setStep(0);
+//     setTitle("Zomato Onboarding");
+//     setAssigneeId("");
+//     setCustomFields([]);
+//     setAadhaarFile([]);
+//     setPanFile([]);
+//     setSelfieFile([]);
+//     setChequeFile([]);
+//     setMenuCardFiles([]);
+//     setPhone("");
+//     setEmail("");
+//     setShopName("");
+//     setLocation("");
+//     setAccountNumber("");
+//     setIfscCode("");
+//     localStorage.removeItem(LOCAL_STORAGE_KEY);
+//   } catch (err) {
+//     console.error("❌ Error in task submission", err);
+//     alert("❌ Error while submitting");
+//   } finally {
+//     setLoading(false);
+//     setUploading(false);
+//   }
+// };
+
+
+
+
+
+
+
+
+
+//   return (
+//     <form
+//       onSubmit={handleSubmit}
+//       className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow"
+//     >
+//       <div className="flex justify-center gap-4 mb-6">
+//         {["Step 1", "Step 2", "Step 3"].map((label, idx) => (
+//           <button
+//             key={idx}
+//             type="button"
+//             onClick={() => setStep(idx)}
+//             className={`px-4 py-2 rounded ${
+//               step === idx ? "bg-purple-600 text-white" : "bg-gray-300"
+//             }`}
+//           >
+//             {label}
+//           </button>
+//         ))}
+//       </div>
+
+//       {step === 0 && (
+//         <BasicInfoStep
+//           title={title}
+//           assigneeId={assigneeId}
+//           activeTab={activeTab}
+//           setTitle={setTitle}
+//           setAssigneeId={setAssigneeId}
+//           setActiveTab={setActiveTab}
+//         />
+//       )}
+
+//       {step === 1 && (
+//         <UploadsStep
+//           activeTab={activeTab}
+//           aadhaarFile={aadhaarFile}
+//           panFile={panFile}
+//           selfieFile={selfieFile}
+//           chequeFile={chequeFile}
+//           menuCardFiles={menuCardFiles}
+//           phone={phone}
+//           email={email}
+//           shopName={shopName}
+//           location={location}
+//           accountNumber={accountNumber}
+//           ifscCode={ifscCode}
+//           setAadhaarFile={setAadhaarFile}
+//           setPanFile={setPanFile}
+//           setSelfieFile={setSelfieFile}
+//           setChequeFile={setChequeFile}
+//           setMenuCardFiles={setMenuCardFiles}
+//           setPhone={setPhone}
+//           setEmail={setEmail}
+//           setShopName={setShopName}
+//           setLocation={setLocation}
+//           setAccountNumber={setAccountNumber}
+//           setIfscCode={setIfscCode}
+//         />
+//       )}
+
+//       {step === 2 && (
+//         <CustomFieldsStep
+//           customFields={customFields}
+//           setCustomFields={setCustomFields}
+//         />
+//       )}
+
+//       {uploading && uploadStatus && (
+//         <p className="text-sm text-blue-600 mt-4 animate-pulse">{uploadStatus}</p>
+//       )}
+
+//       <div className="mt-6">
+//         {step < 2 ? (
+//           <button
+//             type="button"
+//             onClick={() => setStep(step + 1)}
+//             className="bg-purple-600 text-white px-6 py-2 rounded"
+//           >
+//             ➡️ Next
+//           </button>
+//         ) : (
+//           <button
+//             type="submit"
+//             className="bg-purple-600 text-white px-6 py-2 rounded w-full"
+//             disabled={loading}
+//           >
+//             {loading ? "Creating..." : "✅ Create Task"}
+//           </button>
+//         )}
+//       </div>
+//     </form>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//new 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// "use client";
+
+// import React, { useEffect, useState } from "react";
+// import BasicInfoStep from "./BasicInfoStep";
+// import UploadsStep from "./UploadsStep";
+// import CustomFieldsStep from "./CustomFieldsStep";
+// import { uploadToCloudinary } from "./utils";
+
+// type CustomField = {
+//   label: string;
+//   value: string;
+//   files: File[];
+// };
+
+// type TabType = "license" | "swiggy" | "zomato";
+// const LOCAL_STORAGE_KEY = "onboarding-task-form";
+
+// export default function TaskForm() {
+//   const [title, setTitle] = useState("Zomato Onboarding");
+//   const [assigneeId, setAssigneeId] = useState("");
+//   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+//   const [step, setStep] = useState(0);
+//   const [activeTab, setActiveTab] = useState<TabType>("license");
+
+//   const [aadhaarFile, setAadhaarFile] = useState<File[]>([]);
+//   const [panFile, setPanFile] = useState<File[]>([]);
+//   const [selfieFile, setSelfieFile] = useState<File[]>([]);
+//   const [chequeFile, setChequeFile] = useState<File[]>([]);
+//   const [menuCardFiles, setMenuCardFiles] = useState<File[]>([]);
+
+//   const [phone, setPhone] = useState("");
+//   const [email, setEmail] = useState("");
+//   const [shopName, setShopName] = useState("");
+//   const [location, setLocation] = useState("");
+//   const [accountNumber, setAccountNumber] = useState("");
+//   const [ifscCode, setIfscCode] = useState("");
+
+//   const [customerName, setCustomerName] = useState("");
+// const [startDate, setStartDate] = useState("");
+// const [packageAmount, setPackageAmount] = useState("");
+// const [timeline, setTimeline] = useState("");
+// const [restId, setRestId] = useState("");
+// const [endDate, setEndDate] = useState("");
+
+
+//   const [loading, setLoading] = useState(false);
+//   const [uploading, setUploading] = useState(false);
+//   const [uploadStatus, setUploadStatus] = useState("");
+
+
+//   useEffect(() => {
+//   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+//   if (saved) {
+//     const parsed = JSON.parse(saved);
+//     setTitle(parsed.title || "");
+//     setAssigneeId(parsed.assigneeId || "");
+//     setCustomFields(parsed.customFields || []);
+//     setActiveTab(parsed.activeTab || "license");
+//     setStep(parsed.step || 0);
+//     setCustomerName(parsed.customerName || "");
+//     setStartDate(parsed.startDate || "");
+//     setPackageAmount(parsed.packageAmount || "");
+//     setTimeline(parsed.timeline || "");
+//         setRestId(parsed.restId || "");
+//     setEndDate(parsed.endDate || "");
+//   }
+// }, []);
+
+
+//  useEffect(() => {
+//   const state = {
+//     title,
+//     assigneeId,
+//     customFields,
+//     activeTab,
+//     step,
+//     customerName,
+//     startDate,
+//     packageAmount,
+//     timeline,
+//     restId,
+//     endDate
+//   };
+//   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+// }, [
+//   title,
+//   assigneeId,
+//   customFields,
+//   activeTab,
+//   step,
+//   customerName,
+//   startDate,
+//   packageAmount,
+//   timeline,
+//     restId,
+//   endDate
+// ]);
+
+
+
+
+
+
+
+// const handleSubmit = async (e: React.FormEvent) => {
+//   e.preventDefault();
+//   if (step < 2) return setStep(step + 1);
+
+//   setLoading(true);
+//   setUploading(true);
+//   setUploadStatus("");
+
+//   try {
+//     // ✅ Fix: Prevent reusing already-read file streams
+//     const uploadedFileMap = new Map<string, string>(); // file.name -> url
+
+//     const uploadUniqueFile = async (file: File): Promise<string> => {
+//       if (uploadedFileMap.has(file.name)) {
+//         return uploadedFileMap.get(file.name)!;
+//       }
+//       const newFile = new File([file], file.name); // re-clone the File
+//       const url = await uploadToCloudinary(newFile, setUploadStatus);
+//       uploadedFileMap.set(file.name, url);
+//       return url;
+//     };
+
+//     const staticFiles = [
+//       ...aadhaarFile,
+//       ...panFile,
+//       ...selfieFile,
+//       ...chequeFile,
+//       ...menuCardFiles,
+//     ].filter(Boolean);
+
+//     const attachments = await Promise.all(
+//       staticFiles.map((file) =>
+//         uploadUniqueFile(file).catch((err) => {
+//           console.error("❌ Failed upload:", file.name, err);
+//           throw new Error(`Failed to upload ${file.name}`);
+//         })
+//       )
+//     );
+
+//     const uploadedCustomFields = await Promise.all(
+//       customFields.map(async (field) => {
+//         const urls: string[] = [];
+//         for (const file of field.files) {
+//           const url = await uploadUniqueFile(file);
+//           urls.push(url);
+//         }
+//         return {
+//           label: field.label,
+//           value: field.value,
+//           files: urls,
+//         };
+//       })
+//     );
+
+// const payload = {
+//   title,
+//   assigneeId,
+//   assigneeEmail: email.trim(),
+//   activeTab,
+//   attachments,
+//   tags: [],
+//   customFields: {
+//     phone,
+//     email,
+//     shopName,
+//     location,
+//     accountNumber,
+//     ifscCode,
+//     customerName,
+//     restId,
+//     startDate,
+//     endDate,
+//     packageAmount,
+//     timeline,
+//     fields: uploadedCustomFields,
+//   },
+// };
+
+
+// const trimmedPayload = {
+//   ...payload,
+//   customFields: {
+//     ...payload.customFields,
+//     phone: phone.trim(),
+//     email: email.trim(),
+//     shopName: shopName.trim(),
+//     location: location.trim(),
+//     accountNumber: accountNumber.trim(),
+//     ifscCode: ifscCode.trim(),
+//     customerName: customerName.trim(),
+//     restId: restId.trim(),
+//     packageAmount: packageAmount.trim(),
+//     timeline: timeline.trim(),
+//     // startDate and endDate are left as-is (usually in ISO format)
+//     fields: uploadedCustomFields,
+//   },
+//   assigneeEmail: email.trim(),
+// };
+
+
+//     const res = await fetch("/api/tasks", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       // body: JSON.stringify(payload),
+//       body: JSON.stringify(trimmedPayload),
+
+//     });
+
+//     const json = await res.json();
+
+//     if (!res.ok) {
+//       console.error("❌ Failed to create task:", json);
+//       alert("❌ Failed to create task");
+//       return;
+//     }
+
+//     console.log("✅ Task created:", json.task);
+//     alert("✅ Task created successfully");
+
+//     // Reset form
+//     setStep(0);
+//     setTitle("Zomato Onboarding");
+//     setAssigneeId("");
+//     setCustomFields([]);
+//     setAadhaarFile([]);
+//     setPanFile([]);
+//     setSelfieFile([]);
+//     setChequeFile([]);
+//     setMenuCardFiles([]);
+//     setPhone("");
+//     setEmail("");
+//     setShopName("");
+//     setLocation("");
+//     setAccountNumber("");
+//     setIfscCode("");
+//     localStorage.removeItem(LOCAL_STORAGE_KEY);
+//   } catch (err) {
+//     console.error("❌ Error in task submission", err);
+//     alert("❌ Error while submitting");
+//   } finally {
+//     setLoading(false);
+//     setUploading(false);
+//   }
+// };
+
+
+
+
+
+
+
+
+
+//   return (
+//     <form
+//       onSubmit={handleSubmit}
+//       className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow"
+//     >
+//       <div className="flex justify-center gap-4 mb-6">
+//         {["Step 1", "Step 2", "Step 3"].map((label, idx) => (
+//           <button
+//             key={idx}
+//             type="button"
+//             onClick={() => setStep(idx)}
+//             className={`px-4 py-2 rounded ${
+//               step === idx ? "bg-purple-600 text-white" : "bg-gray-300"
+//             }`}
+//           >
+//             {label}
+//           </button>
+//         ))}
+//       </div>
+
+//       {step === 0 && (
+//         <BasicInfoStep
+//           title={title}
+//           assigneeId={assigneeId}
+//           activeTab={activeTab}
+//           setTitle={setTitle}
+//           setAssigneeId={setAssigneeId}
+//           setActiveTab={setActiveTab}
+//         />
+//       )}
+
+//       {step === 1 && (
+//         // <UploadsStep
+//         //   activeTab={activeTab}
+//         //   aadhaarFile={aadhaarFile}
+//         //   panFile={panFile}
+//         //   selfieFile={selfieFile}
+//         //   chequeFile={chequeFile}
+//         //   menuCardFiles={menuCardFiles}
+//         //   phone={phone}
+//         //   email={email}
+//         //   shopName={shopName}
+//         //   location={location}
+//         //   accountNumber={accountNumber}
+//         //   ifscCode={ifscCode}
+//         //   setAadhaarFile={setAadhaarFile}
+//         //   setPanFile={setPanFile}
+//         //   setSelfieFile={setSelfieFile}
+//         //   setChequeFile={setChequeFile}
+//         //   setMenuCardFiles={setMenuCardFiles}
+//         //   setPhone={setPhone}
+//         //   setEmail={setEmail}
+//         //   setShopName={setShopName}
+//         //   setLocation={setLocation}
+//         //   setAccountNumber={setAccountNumber}
+//         //   setIfscCode={setIfscCode}
+//         // />
+
+
+//    <UploadsStep
+//   activeTab={activeTab}
+//   aadhaarFile={aadhaarFile}
+//   panFile={panFile}
+//   selfieFile={selfieFile}
+//   chequeFile={chequeFile}
+//   menuCardFiles={menuCardFiles}
+//   phone={phone}
+//   email={email}
+//   shopName={shopName}
+//   location={location}
+//   accountNumber={accountNumber}
+//   ifscCode={ifscCode}
+//   restId={restId}
+//   customerName={customerName}
+//   packageAmount={packageAmount}
+//   startDate={startDate}
+//   endDate={endDate}
+//   timeline={timeline}
+//   setAadhaarFile={setAadhaarFile}
+//   setPanFile={setPanFile}
+//   setSelfieFile={setSelfieFile}
+//   setChequeFile={setChequeFile}
+//   setMenuCardFiles={setMenuCardFiles}
+//   setPhone={setPhone}
+//   setEmail={setEmail}
+//   setShopName={setShopName}
+//   setLocation={setLocation}
+//   setAccountNumber={setAccountNumber}
+//   setIfscCode={setIfscCode}
+//   setRestId={setRestId}
+//   setCustomerName={setCustomerName}
+//   setPackageAmount={setPackageAmount}
+//   setStartDate={setStartDate}
+//   setEndDate={setEndDate}
+//   setTimeline={setTimeline}
+// />
+
+//       )}
+
+//       {step === 2 && (
+//         <CustomFieldsStep
+//           customFields={customFields}
+//           setCustomFields={setCustomFields}
+//         />
+//       )}
+
+//       {uploading && uploadStatus && (
+//         <p className="text-sm text-blue-600 mt-4 animate-pulse">{uploadStatus}</p>
+//       )}
+
+//       <div className="mt-6">
+//         {step < 2 ? (
+//           <button
+//             type="button"
+//             onClick={() => setStep(step + 1)}
+//             className="bg-purple-600 text-white px-6 py-2 rounded"
+//           >
+//             ➡️ Next
+//           </button>
+//         ) : (
+//           <button
+//             type="submit"
+//             className="bg-purple-600 text-white px-6 py-2 rounded w-full"
+//             disabled={loading}
+//           >
+//             {loading ? "Creating..." : "✅ Create Task"}
+//           </button>
+//         )}
+//       </div>
+//     </form>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// "use client";
+
+// import React, { useEffect, useState } from "react";
+// import BasicInfoStep from "./BasicInfoStep";
+// import UploadsStep from "./UploadsStep";
+// import CustomFieldsStep from "./CustomFieldsStep";
+// import { uploadToCloudinary } from "./utils";
+
+// type CustomField = {
+//   label: string;
+//   value: string;
+//   files: File[];
+// };
+
+// type TabType = "license" | "swiggy" | "zomato";
+// const LOCAL_STORAGE_KEY = "onboarding-task-form";
+
+// export default function TaskForm() {
+//   const [title, setTitle] = useState("Zomato Onboarding");
+//   const [assigneeId, setAssigneeId] = useState("");
+//   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+//   const [step, setStep] = useState(0);
+//   const [activeTab, setActiveTab] = useState<TabType>("license");
+
+//   const [aadhaarFile, setAadhaarFile] = useState<File[]>([]);
+//   const [panFile, setPanFile] = useState<File[]>([]);
+//   const [selfieFile, setSelfieFile] = useState<File[]>([]);
+//   const [chequeFile, setChequeFile] = useState<File[]>([]);
+//   const [menuCardFiles, setMenuCardFiles] = useState<File[]>([]);
+
+//   const [phone, setPhone] = useState("");
+//   const [email, setEmail] = useState("");
+//   const [shopName, setShopName] = useState("");
+//   const [location, setLocation] = useState("");
+//   const [accountNumber, setAccountNumber] = useState("");
+//   const [ifscCode, setIfscCode] = useState("");
+
+//   const [customerName, setCustomerName] = useState("");
+// const [startDate, setStartDate] = useState("");
+// const [packageAmount, setPackageAmount] = useState("");
+// const [timeline, setTimeline] = useState("");
+// const [restId, setRestId] = useState("");
+// const [endDate, setEndDate] = useState("");
+
+
+//   const [loading, setLoading] = useState(false);
+//   const [uploading, setUploading] = useState(false);
+//   const [uploadStatus, setUploadStatus] = useState("");
+
+
+//   useEffect(() => {
+//   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+//   if (saved) {
+//     const parsed = JSON.parse(saved);
+//     setTitle(parsed.title || "");
+//     setAssigneeId(parsed.assigneeId || "");
+//     setCustomFields(parsed.customFields || []);
+//     setActiveTab(parsed.activeTab || "license");
+//     setStep(parsed.step || 0);
+//     setCustomerName(parsed.customerName || "");
+//     setStartDate(parsed.startDate || "");
+//     setPackageAmount(parsed.packageAmount || "");
+//     setTimeline(parsed.timeline || "");
+//         setRestId(parsed.restId || "");
+//     setEndDate(parsed.endDate || "");
+//   }
+// }, []);
+
+
+//  useEffect(() => {
+//   const state = {
+//     title,
+//     assigneeId,
+//     customFields,
+//     activeTab,
+//     step,
+//     customerName,
+//     startDate,
+//     packageAmount,
+//     timeline,
+//     restId,
+//     endDate
+//   };
+//   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+// }, [
+//   title,
+//   assigneeId,
+//   customFields,
+//   activeTab,
+//   step,
+//   customerName,
+//   startDate,
+//   packageAmount,
+//   timeline,
+//     restId,
+//   endDate
+// ]);
+
+
+
+
+
+
+
+// const handleSubmit = async (e: React.FormEvent) => {
+//   e.preventDefault();
+//   if (step < 2) return setStep(step + 1);
+
+//   setLoading(true);
+//   setUploading(true);
+//   setUploadStatus("");
+
+//   try {
+//     // ✅ Fix: Prevent reusing already-read file streams
+//     const uploadedFileMap = new Map<string, string>(); // file.name -> url
+
+//     const uploadUniqueFile = async (file: File): Promise<string> => {
+//       if (uploadedFileMap.has(file.name)) {
+//         return uploadedFileMap.get(file.name)!;
+//       }
+//       const newFile = new File([file], file.name); // re-clone the File
+//       const url = await uploadToCloudinary(newFile, setUploadStatus);
+//       uploadedFileMap.set(file.name, url);
+//       return url;
+//     };
+
+//     const staticFiles = [
+//       ...aadhaarFile,
+//       ...panFile,
+//       ...selfieFile,
+//       ...chequeFile,
+//       ...menuCardFiles,
+//     ].filter(Boolean);
+
+//     const attachments = await Promise.all(
+//       staticFiles.map((file) =>
+//         uploadUniqueFile(file).catch((err) => {
+//           console.error("❌ Failed upload:", file.name, err);
+//           throw new Error(`Failed to upload ${file.name}`);
+//         })
+//       )
+//     );
+
+//     const uploadedCustomFields = await Promise.all(
+//       customFields.map(async (field) => {
+//         const urls: string[] = [];
+//         for (const file of field.files) {
+//           const url = await uploadUniqueFile(file);
+//           urls.push(url);
+//         }
+//         return {
+//           label: field.label,
+//           value: field.value,
+//           files: urls,
+//         };
+//       })
+//     );
+
+// const payload = {
+//   title,
+//   assigneeId,
+//   assigneeEmail: email.trim(),
+//   activeTab,
+//   attachments,
+//   tags: [],
+//   customFields: {
+//     phone,
+//     email,
+//     shopName,
+//     location,
+//     accountNumber,
+//     ifscCode,
+//     customerName,
+//     restId,
+//     startDate,
+//     endDate,
+//     packageAmount,
+//     timeline,
+//     fields: uploadedCustomFields,
+//   },
+// };
+
+
+// const trimmedPayload = {
+//   ...payload,
+//   customFields: {
+//     ...payload.customFields,
+//     phone: phone.trim(),
+//     email: email.trim(),
+//     shopName: shopName.trim(),
+//     location: location.trim(),
+//     accountNumber: accountNumber.trim(),
+//     ifscCode: ifscCode.trim(),
+//     customerName: customerName.trim(),
+//     restId: restId.trim(),
+//     packageAmount: packageAmount.trim(),
+//     timeline: timeline.trim(),
+//     // startDate and endDate are left as-is (usually in ISO format)
+//     fields: uploadedCustomFields,
+//   },
+//   assigneeEmail: email.trim(),
+// };
+
+
+//     const res = await fetch("/api/tasks", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       // body: JSON.stringify(payload),
+//       body: JSON.stringify(trimmedPayload),
+
+//     });
+
+//     const json = await res.json();
+
+//     if (!res.ok) {
+//       console.error("❌ Failed to create task:", json);
+//       alert("❌ Failed to create task");
+//       return;
+//     }
+
+//     console.log("✅ Task created:", json.task);
+//     alert("✅ Task created successfully");
+
+//     // Reset form
+//     setStep(0);
+//     setTitle("Zomato Onboarding");
+//     setAssigneeId("");
+//     setCustomFields([]);
+//     setAadhaarFile([]);
+//     setPanFile([]);
+//     setSelfieFile([]);
+//     setChequeFile([]);
+//     setMenuCardFiles([]);
+//     setPhone("");
+//     setEmail("");
+//     setShopName("");
+//     setLocation("");
+//     setAccountNumber("");
+//     setIfscCode("");
+//     localStorage.removeItem(LOCAL_STORAGE_KEY);
+//   } catch (err) {
+//     console.error("❌ Error in task submission", err);
+//     alert("❌ Error while submitting");
+//   } finally {
+//     setLoading(false);
+//     setUploading(false);
+//   }
+// };
+
+
+
+
+
+
+
+
+
+//   return (
+//     <form
+//       onSubmit={handleSubmit}
+//       className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow"
+//     >
+//       <div className="flex justify-center gap-4 mb-6">
+//         {["Step 1", "Step 2", "Step 3"].map((label, idx) => (
+//           <button
+//             key={idx}
+//             type="button"
+//             onClick={() => setStep(idx)}
+//             className={`px-4 py-2 rounded ${
+//               step === idx ? "bg-purple-600 text-white" : "bg-gray-300"
+//             }`}
+//           >
+//             {label}
+//           </button>
+//         ))}
+//       </div>
+
+//       {step === 0 && (
+//         <BasicInfoStep
+//           title={title}
+//           assigneeId={assigneeId}
+//           activeTab={activeTab}
+//           setTitle={setTitle}
+//           setAssigneeId={setAssigneeId}
+//           setActiveTab={setActiveTab}
+//         />
+//       )}
+
+//       {step === 1 && (
+    
+
+//    <UploadsStep
+//   activeTab={activeTab}
+//   aadhaarFile={aadhaarFile}
+//   panFile={panFile}
+//   selfieFile={selfieFile}
+//   chequeFile={chequeFile}
+//   menuCardFiles={menuCardFiles}
+//   phone={phone}
+//   email={email}
+//   shopName={shopName}
+//   location={location}
+//   accountNumber={accountNumber}
+//   ifscCode={ifscCode}
+//   restId={restId}
+//   customerName={customerName}
+//   packageAmount={packageAmount}
+//   startDate={startDate}
+//   endDate={endDate}
+//   timeline={timeline}
+//   setAadhaarFile={setAadhaarFile}
+//   setPanFile={setPanFile}
+//   setSelfieFile={setSelfieFile}
+//   setChequeFile={setChequeFile}
+//   setMenuCardFiles={setMenuCardFiles}
+//   setPhone={setPhone}
+//   setEmail={setEmail}
+//   setShopName={setShopName}
+//   setLocation={setLocation}
+//   setAccountNumber={setAccountNumber}
+//   setIfscCode={setIfscCode}
+//   setRestId={setRestId}
+//   setCustomerName={setCustomerName}
+//   setPackageAmount={setPackageAmount}
+//   setStartDate={setStartDate}
+//   setEndDate={setEndDate}
+//   setTimeline={setTimeline}
+// />
+
+//       )}
+
+//       {step === 2 && (
+//         <CustomFieldsStep
+//           customFields={customFields}
+//           setCustomFields={setCustomFields}
+//         />
+//       )}
+
+//       {uploading && uploadStatus && (
+//         <p className="text-sm text-blue-600 mt-4 animate-pulse">{uploadStatus}</p>
+//       )}
+
+//       <div className="mt-6">
+//         {step < 2 ? (
+//           <button
+//             type="button"
+//             onClick={() => setStep(step + 1)}
+//             className="bg-purple-600 text-white px-6 py-2 rounded"
+//           >
+//             ➡️ Next
+//           </button>
+//         ) : (
+//           <button
+//             type="submit"
+//             className="bg-purple-600 text-white px-6 py-2 rounded w-full"
+//             disabled={loading}
+//           >
+//             {loading ? "Creating..." : "✅ Create Task"}
+//           </button>
+//         )}
+//       </div>
+//     </form>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// src/app/components/TaskForm/TaskForm.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -563,7 +1954,8 @@ type CustomField = {
   files: File[];
 };
 
-type TabType = "license" | "swiggy" | "zomato";
+// ✅ UPDATED: TabType now includes all categories used in BasicInfoStep's dropdown
+type TabType = "license" | "swiggy" | "zomato" | "combo" | "photo" | "account" | "other";
 const LOCAL_STORAGE_KEY = "onboarding-task-form";
 
 export default function TaskForm() {
@@ -586,6 +1978,13 @@ export default function TaskForm() {
   const [accountNumber, setAccountNumber] = useState("");
   const [ifscCode, setIfscCode] = useState("");
 
+  const [customerName, setCustomerName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [packageAmount, setPackageAmount] = useState("");
+  const [timeline, setTimeline] = useState("");
+  const [restId, setRestId] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
@@ -597,15 +1996,46 @@ export default function TaskForm() {
       setTitle(parsed.title || "");
       setAssigneeId(parsed.assigneeId || "");
       setCustomFields(parsed.customFields || []);
-      setActiveTab(parsed.activeTab || "license");
+      // Ensure the parsed activeTab is a valid TabType, default to 'license' if not
+      setActiveTab((parsed.activeTab || "license") as TabType);
       setStep(parsed.step || 0);
+      setCustomerName(parsed.customerName || "");
+      setStartDate(parsed.startDate || "");
+      setPackageAmount(parsed.packageAmount || "");
+      setTimeline(parsed.timeline || "");
+      setRestId(parsed.restId || "");
+      setEndDate(parsed.endDate || "");
     }
   }, []);
 
   useEffect(() => {
-    const state = { title, assigneeId, customFields, activeTab, step };
+    const state = {
+      title,
+      assigneeId,
+      customFields,
+      activeTab,
+      step,
+      customerName,
+      startDate,
+      packageAmount,
+      timeline,
+      restId,
+      endDate,
+    };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-  }, [title, assigneeId, customFields, activeTab, step]);
+  }, [
+    title,
+    assigneeId,
+    customFields,
+    activeTab,
+    step,
+    customerName,
+    startDate,
+    packageAmount,
+    timeline,
+    restId,
+    endDate,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -616,6 +2046,19 @@ export default function TaskForm() {
     setUploadStatus("");
 
     try {
+      // ✅ Fix: Prevent reusing already-read file streams
+      const uploadedFileMap = new Map<string, string>(); // file.name -> url
+
+      const uploadUniqueFile = async (file: File): Promise<string> => {
+        if (uploadedFileMap.has(file.name)) {
+          return uploadedFileMap.get(file.name)!;
+        }
+        const newFile = new File([file], file.name); // re-clone the File
+        const url = await uploadToCloudinary(newFile, setUploadStatus);
+        uploadedFileMap.set(file.name, url);
+        return url;
+      };
+
       const staticFiles = [
         ...aadhaarFile,
         ...panFile,
@@ -625,14 +2068,19 @@ export default function TaskForm() {
       ].filter(Boolean);
 
       const attachments = await Promise.all(
-        staticFiles.map((file) => uploadToCloudinary(file, setUploadStatus))
+        staticFiles.map((file) =>
+          uploadUniqueFile(file).catch((err) => {
+            console.error("❌ Failed upload:", file.name, err);
+            throw new Error(`Failed to upload ${file.name}`);
+          })
+        )
       );
 
       const uploadedCustomFields = await Promise.all(
         customFields.map(async (field) => {
           const urls: string[] = [];
           for (const file of field.files) {
-            const url = await uploadToCloudinary(file, setUploadStatus);
+            const url = await uploadUniqueFile(file);
             urls.push(url);
           }
           return {
@@ -643,47 +2091,55 @@ export default function TaskForm() {
         })
       );
 
-      // const payload = {
-      //   title,
-      //   assigneeId,
-      //   activeTab,
-      //   attachments,
-      //   tags: [],
-      //   customFields: {
-      //     phone,
-      //     email,
-      //     shopName,
-      //     location,
-      //     accountNumber,
-      //     ifscCode,
-      //     fields: uploadedCustomFields,
-      //   },
-      // };
-
-
       const payload = {
-  title,
-  assigneeId,
-  assigneeEmail: email, // ✅ Add this line
-  activeTab,
-  attachments,
-  tags: [],
-  customFields: {
-    phone,
-    email,
-    shopName,
-    location,
-    accountNumber,
-    ifscCode,
-    fields: uploadedCustomFields,
-  },
-};
+        title,
+        assigneeId,
+        assigneeEmail: email.trim(),
+        activeTab,
+        attachments,
+        tags: [],
+        customFields: {
+          phone,
+          email,
+          shopName,
+          location,
+          accountNumber,
+          ifscCode,
+          customerName,
+          restId,
+          startDate,
+          endDate,
+          packageAmount,
+          timeline,
+          fields: uploadedCustomFields,
+        },
+      };
 
+      const trimmedPayload = {
+        ...payload,
+        customFields: {
+          ...payload.customFields,
+          phone: phone.trim(),
+          email: email.trim(),
+          shopName: shopName.trim(),
+          location: location.trim(),
+          accountNumber: accountNumber.trim(),
+          ifscCode: ifscCode.trim(),
+          customerName: customerName.trim(),
+          restId: restId.trim(),
+          packageAmount: packageAmount.trim(),
+          timeline: timeline.trim(),
+          // startDate and endDate are left as-is (usually in ISO format)
+          fields: uploadedCustomFields,
+        },
+        assigneeEmail: email.trim(),
+      };
 
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        // body: JSON.stringify(payload),
+        body: JSON.stringify(trimmedPayload),
       });
 
       const json = await res.json();
@@ -724,10 +2180,7 @@ export default function TaskForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow"
-    >
+    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
       <div className="flex justify-center gap-4 mb-6">
         {["Step 1", "Step 2", "Step 3"].map((label, idx) => (
           <button
@@ -768,6 +2221,12 @@ export default function TaskForm() {
           location={location}
           accountNumber={accountNumber}
           ifscCode={ifscCode}
+          restId={restId}
+          customerName={customerName}
+          packageAmount={packageAmount}
+          startDate={startDate}
+          endDate={endDate}
+          timeline={timeline}
           setAadhaarFile={setAadhaarFile}
           setPanFile={setPanFile}
           setSelfieFile={setSelfieFile}
@@ -779,14 +2238,17 @@ export default function TaskForm() {
           setLocation={setLocation}
           setAccountNumber={setAccountNumber}
           setIfscCode={setIfscCode}
+          setRestId={setRestId}
+          setCustomerName={setCustomerName}
+          setPackageAmount={setPackageAmount}
+          setStartDate={setStartDate}
+          setEndDate={setEndDate}
+          setTimeline={setTimeline}
         />
       )}
 
       {step === 2 && (
-        <CustomFieldsStep
-          customFields={customFields}
-          setCustomFields={setCustomFields}
-        />
+        <CustomFieldsStep customFields={customFields} setCustomFields={setCustomFields} />
       )}
 
       {uploading && uploadStatus && (

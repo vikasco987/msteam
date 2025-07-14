@@ -1,235 +1,89 @@
-
-
-// export async function uploadToCloudinary(
-//   file: File,
-//   setUploadStatus?: (msg: string) => void
-// ): Promise<string> {
-//   setUploadStatus?.(`Uploading ${file.name}...`);
-
-//   const formData = new FormData();
-//   formData.append("file", file);
-//   formData.append("upload_preset", "magic_upload"); // ✅ Replace with your preset
-
-//   const res = await fetch("https://api.cloudinary.com/v1_1/dp2ta7xca/upload", {
-//     method: "POST",
-//     body: formData,
-//   });
-
-//   if (!res.ok) {
-//     setUploadStatus?.(`❌ Failed to upload ${file.name}`);
-//     throw new Error("Cloudinary upload failed");
-//   }
-
-//   const data = await res.json();
-//   setUploadStatus?.(`✅ Uploaded ${file.name}`);
-//   return data.secure_url;
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-// export async function uploadToCloudinary(
-//   file: File,
-//   setUploadStatus?: (msg: string) => void
-// ): Promise<string> {
-//   setUploadStatus?.(`Uploading ${file.name}...`);
-
-//   const formData = new FormData();
-//   formData.append("file", file);
-//   formData.append("upload_preset", "magic_upload"); // ✅ Your unsigned preset
-
-//   // ✅ Use "auto" to support both images and PDFs (and other types too)
-//   const res = await fetch("https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload", {
-//     method: "POST",
-//     body: formData,
-//   });
-
-//   if (!res.ok) {
-//     setUploadStatus?.(`❌ Failed to upload ${file.name}`);
-//     throw new Error("Cloudinary upload failed");
-//   }
-
-//   const data = await res.json();
-//   setUploadStatus?.(`✅ Uploaded ${file.name}`);
-//   return data.secure_url;
-// }
-
-
-
-
 // export async function uploadToCloudinary(
 //   file: File,
 //   setUploadStatus?: (msg: string) => void
 // ): Promise<string> {
 //   try {
-//     setUploadStatus?.(`📤 Uploading ${file.name}...`);
-
-//     const formData = new FormData();
-//     formData.append("file", file);
-//     formData.append("upload_preset", "magic_upload"); // Your unsigned preset
-
-//     // Use resource_type "auto" to support images, PDFs, videos, etc.
-//     const res = await fetch("https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload", {
-//       method: "POST",
-//       body: formData,
-//     });
-
-//     if (!res.ok) {
-//       setUploadStatus?.(`❌ Failed to upload ${file.name}`);
-//       throw new Error(`Upload failed with status: ${res.status}`);
-//     }
-
-//     const data = await res.json();
-//     setUploadStatus?.(`✅ Uploaded ${file.name}`);
-//     return data.secure_url;
-//   } catch (error) {
-//     console.error("Upload Error:", error);
-//     setUploadStatus?.(`❌ Upload error: ${file.name}`);
-//     throw error;
-//   }
-// }
-
-
-
-
-
-
-
-
-
-
-// // utils.ts or wherever uploadToCloudinary is defined
-// export async function uploadToCloudinary(
-//   file: File,
-//   setUploadStatus?: (msg: string) => void
-// ): Promise<string> {
-//   try {
-//     setUploadStatus?.(`📤 Uploading ${file.name}...`);
-
-//     const formData = new FormData();
-//     formData.append("file", file);
-//     formData.append("upload_preset", "magic_upload"); // Must match preset in Cloudinary
-//     formData.append("resource_type", "auto"); // handles image, video, raw (pdf)
-
-//     const res = await fetch("https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload", {
-//       method: "POST",
-//       body: formData,
-//     });
-
-//     if (!res.ok) {
-//       const error = await res.text();
-//       throw new Error(`Upload failed: ${error}`);
-//     }
-
-//     const data = await res.json();
-
-//     // ✅ This URL forces file download (fl_attachment ensures downloadable PDF)
-//     const downloadUrl = data.secure_url.replace("/upload/", "/upload/fl_attachment/");
-
-//     setUploadStatus?.(`✅ Uploaded ${file.name}`);
-//     return downloadUrl;
-//   } catch (error) {
-//     console.error("Upload Error:", error);
-//     setUploadStatus?.(`❌ Upload error: ${file.name}`);
-//     throw error;
-//   }
-// }
-// // utils/uploadToCloudinary.ts
-
-// export async function uploadToCloudinary(
-//   file: File,
-//   setUploadStatus?: (msg: string) => void
-// ): Promise<string> {
-//   try {
-//     setUploadStatus?.(`📤 Uploading ${file.name}...`);
-//     const formData = new FormData();
-//     formData.append("file", file);
-//     formData.append("upload_preset", "magic_upload"); // Ensure this is signed unsigned version
-//     formData.append("resource_type", "auto");
-
-//     const res = await fetch("https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload", {
-//       method: "POST",
-//       body: formData,
-//     });
-
-//     if (!res.ok) {
-//       const err = await res.text();
-//       throw new Error(`Upload failed: ${err}`);
-//     }
-
-//     const data = await res.json();
-
-//     // ✅ Use fl_attachment exactly once — do NOT prepend or modify the resource type (image/raw)
-//     const downloadUrl = data.secure_url.replace(
-//       "/upload/",
-//       "/upload/fl_attachment/"
-//     );
-
-//     setUploadStatus?.(`✅ Uploaded ${file.name}`);
-//     return downloadUrl;
-//   } catch (error) {
-//     console.error("Upload Error:", error);
-//     setUploadStatus?.(`❌ Upload error for ${file.name}`);
-//     throw error;
-//   }
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-// export async function uploadToCloudinary(
-//   file: File,
-//   setUploadStatus?: (msg: string) => void
-// ): Promise<string> {
-//   try {
-//     setUploadStatus?.(`📤 Uploading ${file.name}...`);
+//     setUploadStatus?.(`Uploading ${file.name}...`);
 
 //     const formData = new FormData();
 //     formData.append("file", file);
 //     formData.append("upload_preset", "magic_upload");
-//     formData.append("resource_type", "auto"); // Let Cloudinary detect type
 
-//     const res = await fetch("https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload", {
+//     const isPdf = file.name.toLowerCase().endsWith(".pdf");
+
+//     const res = await fetch(
+//       isPdf
+//         ? "https://api.cloudinary.com/v1_1/dp2ta7xca/raw/upload"
+//         : "https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload",
+//       {
+//         method: "POST",
+//         body: formData,
+//       }
+//     );
+
+//     if (!res.ok) {
+//       const errorText = await res.text();
+//       console.error(`❌ Cloudinary Error (${file.name}):`, errorText);
+//       setUploadStatus?.(`❌ Failed to upload ${file.name}`);
+//       throw new Error(`Upload failed for ${file.name}: ${errorText}`);
+//     }
+
+//     const data = await res.json(); // only if response is ok
+//     setUploadStatus?.(`✅ Uploaded ${file.name}`);
+//     return data.secure_url;
+//   } catch (error) {
+//     console.error(`❌ Error uploading "${file.name}":`, error);
+//     throw new Error(`Failed to upload ${file.name}`);
+//   }
+// }
+
+
+
+// export async function uploadToCloudinary(
+//   file: File,
+//   setUploadStatus?: (msg: string) => void
+// ): Promise<string> {
+//   try {
+//     setUploadStatus?.(`Uploading ${file.name}...`);
+
+//     const formData = new FormData();
+//     formData.append("file", file);
+//     formData.append("upload_preset", "magic_upload"); // 🔁 Make sure this is configured in Cloudinary
+
+//     const fileType = file.type;
+//     const isPdf = fileType === "application/pdf";
+//     const isImage = fileType.startsWith("image/");
+
+//     const uploadUrl = isPdf
+//       ? "https://api.cloudinary.com/v1_1/dp2ta7xca/raw/upload"
+//       : isImage
+//       ? "https://api.cloudinary.com/v1_1/dp2ta7xca/image/upload"
+//       : "https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload";
+
+//     const res = await fetch(uploadUrl, {
 //       method: "POST",
 //       body: formData,
 //     });
 
-//     if (!res.ok) {
-//       const error = await res.text();
-//       throw new Error(`Upload failed: ${error}`);
+//     const contentType = res.headers.get("content-type") || "";
+//     if (!res.ok || !contentType.includes("application/json")) {
+//       const errorText = await res.text(); // fallback to text if not JSON
+//       throw new Error(`Cloudinary upload failed:\n${errorText}`);
 //     }
 
-//     const data = await res.json();
-//     const originalUrl = data.secure_url;
+//     type CloudinaryResponse = {
+//       secure_url: string;
+//     };
 
-//     // ✅ Inject fl_attachment ONLY ONCE
-//     const downloadUrl = originalUrl.includes("/upload/fl_attachment/")
-//       ? originalUrl
-//       : originalUrl.replace("/upload/", "/upload/fl_attachment/");
+//     const data: CloudinaryResponse = await res.json();
 
 //     setUploadStatus?.(`✅ Uploaded ${file.name}`);
-//     return downloadUrl;
-//   } catch (error) {
-//     console.error("Upload Error:", error);
-//     setUploadStatus?.(`❌ Upload error: ${file.name}`);
-//     throw error;
+//     return data.secure_url;
+//   } catch (err) {
+//     const error = err instanceof Error ? err.message : "Unknown error";
+//     setUploadStatus?.(`❌ Failed to upload ${file.name}`);
+//     console.error(`Failed upload: "${file.name}"`, err);
+//     throw new Error(`Failed to upload ${file.name}: ${error}`);
 //   }
 // }
 
@@ -240,30 +94,7 @@
 
 
 
-// export async function uploadToCloudinary(file: File): Promise<string> {
-//   const formData = new FormData();
-//   formData.append("file", file);
-//   formData.append("upload_preset", "magic_upload");
-
-//   // Set resource_type = raw if uploading PDF
-//   const isPdf = file.name.toLowerCase().endsWith(".pdf");
-//   const resourceType = isPdf ? "raw" : "auto";
-
-//   const res = await fetch(`https://api.cloudinary.com/v1_1/dp2ta7xca/${resourceType}/upload`, {
-//     method: "POST",
-//     body: formData,
-//   });
-
-//   if (!res.ok) throw new Error("Cloudinary upload failed");
-//   const data = await res.json();
-//   return data.secure_url;
-// }
-
-
-
-
-
-
+// // ✅ Works perfectly for hosted websites
 // export async function uploadToCloudinary(
 //   file: File,
 //   setUploadStatus?: (msg: string) => void
@@ -276,14 +107,15 @@
 
 //   const isPdf = file.name.toLowerCase().endsWith(".pdf");
 
-//   const uploadUrl = isPdf
-//     ? "https://api.cloudinary.com/v1_1/dp2ta7xca/raw/upload"
-//     : "https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload";
-
-//   const res = await fetch(uploadUrl, {
-//     method: "POST",
-//     body: formData,
-//   });
+//   const res = await fetch(
+//     isPdf
+//       ? "https://api.cloudinary.com/v1_1/dp2ta7xca/raw/upload"
+//       : "https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload",
+//     {
+//       method: "POST",
+//       body: formData,
+//     }
+//   );
 
 //   if (!res.ok) {
 //     setUploadStatus?.(`❌ Failed to upload ${file.name}`);
@@ -294,14 +126,6 @@
 //   setUploadStatus?.(`✅ Uploaded ${file.name}`);
 //   return data.secure_url;
 // }
-
-
-
-
-
-
-
-
 
 
 export async function uploadToCloudinary(
@@ -314,24 +138,29 @@ export async function uploadToCloudinary(
   formData.append("file", file);
   formData.append("upload_preset", "magic_upload");
 
-  const isPdf = file.name.toLowerCase().endsWith(".pdf");
+  // Decide based on file extension
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  const isRaw = ["pdf", "doc", "docx", "txt", "xls"].includes(ext);
 
-  const res = await fetch(
-    isPdf
-      ? "https://api.cloudinary.com/v1_1/dp2ta7xca/raw/upload"
-      : "https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload",
-    {
-      method: "POST",
-      body: formData,
-    }
-  );
+  const uploadUrl = isRaw
+    ? "https://api.cloudinary.com/v1_1/dp2ta7xca/raw/upload"
+    : "https://api.cloudinary.com/v1_1/dp2ta7xca/auto/upload";
 
-  if (!res.ok) {
+  const res = await fetch(uploadUrl, {
+    method: "POST",
+    body: formData,
+  });
+
+  const contentType = res.headers.get("content-type") || "";
+
+  if (!res.ok || !contentType.includes("application/json")) {
+    const errText = await res.text();
+    console.error("❌ Upload failed for", file.name, errText);
     setUploadStatus?.(`❌ Failed to upload ${file.name}`);
-    throw new Error("Cloudinary upload failed");
+    throw new Error(`❌ Failed to upload ${file.name}: ${errText}`);
   }
 
   const data = await res.json();
   setUploadStatus?.(`✅ Uploaded ${file.name}`);
-  return data.secure_url; // safe to save
+  return data.secure_url;
 }
