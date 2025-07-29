@@ -11,26 +11,40 @@ import {
   Legend,
 } from "recharts";
 
+// Define the types for individual data arrays
+type DayDataEntry = { date: string; cumulativeRevenue: number };
+type WeekDataEntry = { week: string; cumulativeRevenue: number };
+type MonthDataEntry = { month: string; cumulativeRevenue: number };
+
+// Define the overall ChartProps
 type ChartProps = {
-  dayData: { date: string; cumulativeRevenue: number }[];
-  weekData: { week: string; cumulativeRevenue: number }[];
-  monthData: { month: string; cumulativeRevenue: number }[];
+  dayData: DayDataEntry[];
+  weekData: WeekDataEntry[];
+  monthData: MonthDataEntry[];
 };
+
+// Define the type for combined chart data
+interface CombinedChartData {
+  label: string;
+  day: number | null;
+  week: number | null;
+  month: number | null;
+}
 
 const TABS = ["Day", "Week", "Month", "Combined"];
 
 const colorMap = {
   Day: {
     stroke: "#3b82f6", // Blue
-    fill: "#bfdbfe",   // Light blue
+    fill: "#bfdbfe", // Light blue
   },
   Week: {
     stroke: "#10b981", // Green
-    fill: "#bbf7d0",   // Light green
+    fill: "#bbf7d0", // Light green
   },
   Month: {
     stroke: "#a855f7", // Purple
-    fill: "#e9d5ff",   // Light purple
+    fill: "#e9d5ff", // Light purple
   },
 };
 
@@ -44,7 +58,8 @@ export default function CumulativeRevenueTabs({
   const renderChart = () => {
     if (activeTab === "Combined") {
       // Merge all into a single array with aligned x-axis
-      const combined: any[] = [];
+      // FIX (Line 47): Replace 'any[]' with the actual type 'CombinedChartData[]'
+      const combined: CombinedChartData[] = [];
       const allKeys = new Set<string>();
 
       dayData.forEach((d) => allKeys.add(d.date));
@@ -98,9 +113,13 @@ export default function CumulativeRevenueTabs({
       );
     }
 
+    // Define a union type for the data entries to be used in chartMap
+    type ChartDataEntry = DayDataEntry | WeekDataEntry | MonthDataEntry;
+
+    // FIX (Line 103): Replace 'any[]' in `data` with 'ChartDataEntry[]'
     const chartMap: Record<
       string,
-      { labelKey: string; data: any[]; stroke: string; fill: string }
+      { labelKey: keyof ChartDataEntry; data: ChartDataEntry[]; stroke: string; fill: string }
     > = {
       Day: {
         labelKey: "date",

@@ -2,6 +2,14 @@ import { prisma } from "../../../../lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 
+// Define an interface for the expected structure of the POST request body for notes
+interface CreateNoteRequestBody {
+  taskId: string;
+  content: string;
+  authorName?: string; // Optional field
+  authorEmail?: string; // Optional field
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const taskId = searchParams.get("taskId");
@@ -23,21 +31,30 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { taskId, content, authorName, authorEmail } = body;
+  try { // Added try-catch for better error handling
+    // FIX: Explicitly type the body
+    const body: CreateNoteRequestBody = await req.json();
+    const { taskId, content, authorName, authorEmail } = body;
 
-  if (!taskId || !content) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!taskId || !content) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    const note = await prisma.note.create({
+      data: {
+        taskId: new ObjectId(taskId).toString(),
+        content,
+        authorName,
+        authorEmail,
+      },
+    });
+
+    return NextResponse.json(note);
+  } catch (err: unknown) { // FIX: Changed 'any' to 'unknown' for error handling
+    console.error("Error creating note:", err);
+    return NextResponse.json(
+      { error: "Failed to create note", details: err instanceof Error ? err.message : String(err) },
+      { status: 500 }
+    );
   }
-
-  const note = await prisma.note.create({
-    data: {
-      taskId: new ObjectId(taskId).toString(),
-      content,
-      authorName,
-      authorEmail,
-    },
-  });
-
-  return NextResponse.json(note);
 }

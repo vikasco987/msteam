@@ -218,6 +218,8 @@
 
 
 
+
+
 import { prisma } from "../../../../../lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -275,8 +277,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, task: updatedTask }, { status: 200 });
 
-  } catch (err: any) {
+  } catch (err: unknown) { // FIX: Changed 'any' to 'unknown'
     console.error("❌ API Task Update failed:", err);
+
+    // Provide more specific error messages for common Prisma errors if helpful
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      // You can add more specific error handling based on Prisma error codes here
+      // For example:
+      // if (err.code === 'P2025') { // Record not found
+      //   return NextResponse.json({ error: "Task not found." }, { status: 404 });
+      // }
+    }
+
     return NextResponse.json(
       { error: "Internal server error during task update." },
       { status: 500 }

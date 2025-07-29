@@ -2089,13 +2089,216 @@
 
 
 
-// src/app/api/tasks/[id]/route.ts
+
+
+
+
+
+
+
+
+
+
+// // FILE: src/app/api/tasks/[id]/route.ts
+
+// import { NextRequest, NextResponse } from "next/server";
+// import { prisma } from "../../../../../lib/prisma"; // Adjust path if needed based on your project structure
+// import { auth } from "@clerk/nextjs/server"; // Using Clerk's auth
+// import { Prisma } from "@prisma/client"; // Import Prisma for types like JsonObject, TaskUpdateInput
+
+// export const dynamic = "force-dynamic";
+
+// // Define the expected structure for the PATCH request body
+// // This is an example, adjust based on your actual fields and their types
+// interface PatchRequestBody {
+//   title?: string;
+//   status?: string;
+//   amount?: number;
+//   received?: number;
+//   description?: string;
+//   highlightColor?: string | null;
+//   customFields?: Record<string, any>; // This can be refined further if customFields has a strict schema
+// }
+
+// // --- GET Task by ID (No changes needed here from your provided code) ---
+// export async function GET(
+//   req: NextRequest,
+//   { params }: { params: { id: string } }
+// ) {
+//   const { id: taskId } = params;
+//   const { userId } = auth(); // Get userId from Clerk authentication
+
+//   if (!taskId || !userId) {
+//     return NextResponse.json(
+//       { error: "Unauthorized or missing task ID" },
+//       { status: 400 }
+//     );
+//   }
+
+//   try {
+//     const task = await prisma.task.findUnique({
+//       where: { id: taskId },
+//       include: { subtasks: true }, // Include subtasks if relevant
+//     });
+
+//     if (!task) {
+//       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+//     }
+
+//     // You might want to add a check here to ensure the user is authorized to view this specific task
+//     // e.g., if (task.userId !== userId) { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
+
+//     return NextResponse.json(task, { status: 200 });
+//   } catch (err: unknown) { // FIX: Type caught error as unknown
+//     console.error("❌ Get task failed:", err);
+//     return NextResponse.json({ error: "Fetch failed", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
+//   }
+// }
+
+// // --- PATCH Task (Update) ---
+// export async function PATCH(
+//   req: NextRequest,
+//   { params }: { params: { id: string } }
+// ) {
+//   const { id: taskId } = params;
+//   const { userId } = await auth();
+
+//   if (!taskId) {
+//     return NextResponse.json({ error: "Missing task ID in URL" }, { status: 400 });
+//   }
+//   if (!userId) {
+//     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+
+//   try {
+//     // FIX: Type the request body
+//     const body: PatchRequestBody = await req.json();
+//     // FIX (Line 2152 equivalent): Use Prisma.TaskUpdateInput for type safety
+//     const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
+
+//     const allowedFields = [
+//       "title",
+//       "status",
+//       "amount",
+//       "received",
+//       "description",
+//       "highlightColor",
+//     ];
+
+//     for (const field of allowedFields) {
+//       if (body[field as keyof PatchRequestBody] !== undefined) { // Cast to keyof PatchRequestBody
+//         // Ensure amount and received are numbers or null if applicable
+//         if ((field === "amount" || field === "received")) {
+//             const value = body[field as 'amount' | 'received']; // Safely access
+//             if (typeof value === 'number' || value === null) { // Allow null if your schema supports it
+//                 updateData[field as 'amount' | 'received'] = value;
+//             } else if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+//                 updateData[field as 'amount' | 'received'] = parseFloat(value);
+//             }
+//             // else: handle invalid type, maybe skip or return error
+//         } else {
+//           updateData[field as keyof Prisma.TaskUpdateInput] = body[field as keyof PatchRequestBody];
+//         }
+//       }
+//     }
+
+//     if (body.customFields !== undefined) {
+//       const currentTask = await prisma.task.findUnique({
+//         where: { id: taskId },
+//         select: { customFields: true },
+//       });
+//       // FIX (Line 2178 equivalent): Use Prisma.JsonObject for safer type assertion
+//       const existingCustomFields = (currentTask?.customFields as Prisma.JsonObject) || {};
+//       updateData.customFields = {
+//         ...existingCustomFields,
+//         ...(body.customFields as Prisma.JsonObject), // Ensure body.customFields is also cast
+//       };
+//     }
+
+//     // Check if any actual fields are being updated other than `updatedAt`
+//     if (Object.keys(updateData).length <= 1 && !body.customFields) {
+//       return NextResponse.json({ error: "No valid fields provided for update" }, { status: 400 });
+//     }
+
+//     const updated = await prisma.task.update({
+//       where: { id: taskId },
+//       data: updateData,
+//     });
+
+//     return NextResponse.json({ success: true, task: updated }, { status: 200 });
+//   } catch (err: unknown) { // FIX: Type caught error as unknown
+//     console.error("❌ Update failed:", err);
+//     return NextResponse.json({ error: "Failed to update task", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
+//   }
+// }
+
+// // --- DELETE Task (No changes needed here from your provided code) ---
+// export async function DELETE(
+//   req: NextRequest,
+//   { params }: { params: { id: string } }
+// ) {
+//   const { id: taskId } = params;
+//   const { userId } = auth(); // Get userId from Clerk authentication
+
+//   if (!taskId || !userId) {
+//     return NextResponse.json(
+//       { error: "Unauthorized or missing task ID" },
+//       { status: 400 }
+//     );
+//   }
+
+//   try {
+//     // Delete related subtasks first to maintain referential integrity
+//     await prisma.subtask.deleteMany({ where: { taskId } });
+//     await prisma.note.deleteMany({ where: { taskId } }); // Assuming notes also have a taskId field
+//     await prisma.task.delete({ where: { id: taskId } });
+
+//     return NextResponse.json({ success: true }, { status: 200 });
+//   } catch (err: unknown) { // FIX: Type caught error as unknown
+//     console.error("❌ Delete failed:", err);
+//     return NextResponse.json({ error: "Delete failed", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// FILE: src/app/api/tasks/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma"; // Adjust path if needed based on your project structure
 import { auth } from "@clerk/nextjs/server"; // Using Clerk's auth
+import { Prisma } from "@prisma/client"; // Import Prisma for types like JsonObject, TaskUpdateInput
 
 export const dynamic = "force-dynamic";
+
+// Define the expected structure for the PATCH request body
+// This is an example, adjust based on your actual fields and their types
+interface PatchRequestBody {
+  title?: string;
+  status?: string;
+  amount?: number | string | null; // Allow string as it might come from form data, and null for clearing
+  received?: number | string | null; // Allow string as it might come from form data, and null for clearing
+  description?: string;
+  highlightColor?: string | null;
+  customFields?: Record<string, any>; // This can be refined further if customFields has a strict schema
+}
 
 // --- GET Task by ID (No changes needed here from your provided code) ---
 export async function GET(
@@ -2126,9 +2329,9 @@ export async function GET(
     // e.g., if (task.userId !== userId) { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
 
     return NextResponse.json(task, { status: 200 });
-  } catch (err) {
+  } catch (err: unknown) { // FIX: Type caught error as unknown
     console.error("❌ Get task failed:", err);
-    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+    return NextResponse.json({ error: "Fetch failed", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
 
@@ -2138,7 +2341,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const { id: taskId } = params;
-  const { userId } = await auth(); // ✅ FIXED
+  const { userId } = await auth();
 
   if (!taskId) {
     return NextResponse.json({ error: "Missing task ID in URL" }, { status: 400 });
@@ -2148,8 +2351,12 @@ export async function PATCH(
   }
 
   try {
-    const body = await req.json();
-    const updateData: { [key: string]: any } = { updatedAt: new Date() };
+    // FIX: Type the request body to allow more flexible input for numbers
+    const body: PatchRequestBody = await req.json();
+
+    // FIX (Line 2120 equivalent, assuming this is where `updateData` is initialized):
+    // Use Prisma.TaskUpdateInput for type safety.
+    const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
 
     const allowedFields = [
       "title",
@@ -2161,11 +2368,23 @@ export async function PATCH(
     ];
 
     for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        if ((field === "amount" || field === "received") && typeof body[field] === 'number') {
-          updateData[field] = parseFloat(body[field]);
+      if (body[field as keyof PatchRequestBody] !== undefined) { // Cast to keyof PatchRequestBody
+        // Handle amount and received which might come as string from forms or be null
+        if (field === "amount" || field === "received") {
+          const value = body[field as 'amount' | 'received'];
+          if (typeof value === 'number') {
+            updateData[field] = value;
+          } else if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+            updateData[field] = parseFloat(value);
+          } else if (value === null) {
+            updateData[field] = null; // Allow setting to null if your schema supports it
+          }
+          // Optionally, add a case to handle invalid input types for these fields
         } else {
-          updateData[field] = body[field];
+          // For other fields, directly assign the value
+          // We need to ensure the type from body is compatible with Prisma.TaskUpdateInput
+          // A safer approach might be a switch or a more specific map if types are very diverse
+          (updateData as any)[field] = body[field as keyof PatchRequestBody];
         }
       }
     }
@@ -2175,14 +2394,20 @@ export async function PATCH(
         where: { id: taskId },
         select: { customFields: true },
       });
-      const existingCustomFields = (currentTask?.customFields as Record<string, any>) || {};
+      // FIX (Line 2178 equivalent): Use Prisma.JsonObject for safer type assertion
+      // Ensure existingCustomFields is treated as an object to spread
+      const existingCustomFields = (currentTask?.customFields || {}) as Prisma.JsonObject;
       updateData.customFields = {
         ...existingCustomFields,
-        ...body.customFields,
+        ...(body.customFields as Prisma.JsonObject), // Ensure body.customFields is also cast
       };
     }
 
-    if (Object.keys(updateData).length <= 1 && !body.customFields) {
+    // Check if any actual fields are being updated other than `updatedAt`
+    // This check needs to be careful if `customFields` is the *only* update.
+    const hasOtherUpdates = Object.keys(updateData).some(key => key !== 'updatedAt');
+
+    if (!hasOtherUpdates && !body.customFields) { // Check for customFields separately
       return NextResponse.json({ error: "No valid fields provided for update" }, { status: 400 });
     }
 
@@ -2192,12 +2417,11 @@ export async function PATCH(
     });
 
     return NextResponse.json({ success: true, task: updated }, { status: 200 });
-  } catch (err) {
+  } catch (err: unknown) { // FIX: Type caught error as unknown
     console.error("❌ Update failed:", err);
-    return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update task", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }
-
 
 // --- DELETE Task (No changes needed here from your provided code) ---
 export async function DELETE(
@@ -2217,11 +2441,12 @@ export async function DELETE(
   try {
     // Delete related subtasks first to maintain referential integrity
     await prisma.subtask.deleteMany({ where: { taskId } });
+    await prisma.note.deleteMany({ where: { taskId } }); // Assuming notes also have a taskId field
     await prisma.task.delete({ where: { id: taskId } });
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (err) {
+  } catch (err: unknown) { // FIX: Type caught error as unknown
     console.error("❌ Delete failed:", err);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    return NextResponse.json({ error: "Delete failed", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }

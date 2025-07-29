@@ -1,3 +1,4 @@
+// FILE: src/app/api/stats/goals/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma"; // Adjust path if needed
 
@@ -13,8 +14,8 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(goals);
-  } catch (error: any) {
-    console.error("GET /api/stats/goals error:", error?.message || error);
+  } catch (error: unknown) { // FIX: Changed 'any' to 'unknown'
+    console.error("GET /api/stats/goals error:", error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: "Failed to fetch goals" },
       { status: 500 }
@@ -58,8 +59,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(goal);
-  } catch (error: any) {
-    console.error("POST /api/stats/goals error:", error?.message || error);
+  } catch (error: unknown) { // FIX: Changed 'any' to 'unknown'
+    console.error("POST /api/stats/goals error:", error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: "Failed to save goal. Check the server logs for details." },
       { status: 500 }

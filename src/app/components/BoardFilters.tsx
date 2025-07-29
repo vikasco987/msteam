@@ -6,20 +6,12 @@ import {
   FaSortAmountDownAlt,
   FaCaretDown,
   FaCaretUp,
-  FaTimesCircle, // Added for clearing individual filters
+  // Removed FaTimesCircle as it's not directly used for rendering an icon
+  // within this component, only in the logic for clearing.
 } from "react-icons/fa";
 
-// Define TASK_CATEGORIES directly in BoardFilters as it's static filter options
-// The `value` should be the clean, emoji-stripped version for comparison
-const TASK_CATEGORIES = [
-  { label: "🍽️ Zomato Onboarding", value: "zomato onboarding" },
-  { label: "🍔 Swiggy Onboarding", value: "swiggy onboarding" },
-  { label: "🍽️🍔 Zomato + Swiggy Combo", value: "zomato + swiggy combo" },
-  { label: "🧾 Food License", value: "food license" },
-  { label: "📸 Photo Upload", value: "photo upload" },
-  { label: "📂 Account Handling", value: "account handling" },
-  { label: "🛠️ Other", value: "other" },
-];
+// Removed TASK_CATEGORIES as it's passed via props now (allCategories)
+// and thus not used directly within this component.
 
 interface BoardFiltersProps {
   filterText: string;
@@ -170,8 +162,17 @@ export const BoardFilters: React.FC<BoardFiltersProps> = ({
   ) => {
     if (selectedItems.length === 0) {
       return baseText;
-    } else if (selectedItems.length === allItems.length) {
-      return `${baseText} (All)`;
+    } else if (
+      selectedItems.length ===
+      (typeof allItems[0] === "string" ? allItems.length : allItems.length)
+    ) {
+      // This condition needs to correctly compare lengths based on item type
+      // A more robust check might involve mapping allItems to just their values for comparison
+      const allItemValues = (allItems as any[]).map(item => typeof item === 'string' ? item : item.value);
+      if (selectedItems.length === allItemValues.length && selectedItems.every(item => allItemValues.includes(item))) {
+          return `${baseText} (All)`;
+      }
+      return `${baseText} (${selectedItems.length})`; // Fallback if not all are selected but some are
     } else if (selectedItems.length === 1) {
       const selectedLabel =
         typeof allItems[0] === "string"
@@ -184,6 +185,7 @@ export const BoardFilters: React.FC<BoardFiltersProps> = ({
       return `${baseText} (${selectedItems.length})`;
     }
   };
+
 
   return (
     <div

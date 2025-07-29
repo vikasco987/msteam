@@ -1,6 +1,18 @@
+// FILE: src/app/api/stats/user-performance/comparison/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { subDays, subWeeks, subMonths } from "date-fns";
+
+// Assuming you have a Task model defined in Prisma.
+// The structure of the Task object returned by Prisma.task.findMany()
+// would look something like this. Adjust if your Task model has other fields or different types.
+interface Task {
+  id: string; // Example field
+  amount: number | null; // Assuming 'amount' can be null/undefined
+  received: number | null; // Assuming 'received' can be null/undefined
+  createdAt: Date;
+  // ... other fields from your Task model
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,7 +75,8 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Summary function to compute financials
-    const summarize = (tasks: any[]) => {
+    // FIX: Replaced 'any[]' with 'Task[]' for the tasks parameter
+    const summarize = (tasks: Task[]) => {
       const totalRevenue = tasks.reduce((sum, t) => sum + (t.amount || 0), 0);
       const amountReceived = tasks.reduce((sum, t) => sum + (t.received || 0), 0);
       const pendingAmount = totalRevenue - amountReceived;
@@ -83,8 +96,8 @@ export async function GET(req: NextRequest) {
     ];
 
     return NextResponse.json(summary);
-  } catch (error) {
-    console.error("Comparison API error:", error);
+  } catch (error: unknown) { // It's good practice to also type caught errors as 'unknown'
+    console.error("Comparison API error:", error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: "Failed to compare data" },
       { status: 500 }

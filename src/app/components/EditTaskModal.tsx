@@ -385,6 +385,7 @@ export default function EditTaskModal({
 
   // Load dynamic field keys from backend
   useEffect(() => {
+
     const fetchFieldStructure = async () => {
       try {
         const res = await fetch("/api/field-structure"); // replace if needed

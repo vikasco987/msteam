@@ -1,6 +1,13 @@
+// FILE: src/app/api/tasks/highlight/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma"; // ← based on your pattern
 import { getAuth } from "@clerk/nextjs/server";
+
+// Define the interface for the expected request body
+interface PatchRequestBody {
+  taskId: string;
+  highlightColor: string | null; // Assuming highlightColor can be a string (e.g., hex code, CSS color name) or null to remove highlight
+}
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -9,7 +16,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    // FIX: Explicitly type the body
+    const body: PatchRequestBody = await req.json();
     const { taskId, highlightColor } = body;
 
     if (!taskId || highlightColor === undefined) {
@@ -22,8 +30,9 @@ export async function PATCH(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: updatedTask });
-  } catch (err: any) {
+  } catch (err: unknown) { // FIX: Changed 'any' to 'unknown' for error handling
     console.error("Error updating highlight:", err);
-    return NextResponse.json({ error: "Update failed", details: err.message }, { status: 500 });
+    // Safely access error message if it's an Error instance
+    return NextResponse.json({ error: "Update failed", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
   }
 }

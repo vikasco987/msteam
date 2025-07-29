@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
-import type { RouteContext } from "next"; // Optional, but for clarity
+// import type { RouteContext } from "next"; // Optional, but for clarity
 
 export async function PATCH(
   req: NextRequest,

@@ -8381,6 +8381,21 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
@@ -8395,7 +8410,7 @@ import { Task as TaskType } from "../../types/task"; // Ensure this path is corr
 
 import EditTaskModal from "../components/EditTaskModal";
 import TaskDetailsCard from "../components/TaskDetailsCard";
-import TaskEditableCard from "../components/TaskEditableCard"; // Assuming this is still used elsewhere
+// import TaskEditableCard from "./TaskEditableCard"; // ✅ Deleted: Line 8398 - Unused import
 import FloatingTaskCard from "../components/FloatingTaskCard"; // Import the FloatingTaskCard
 import toast from "react-hot-toast";
 
@@ -8455,7 +8470,7 @@ export default function Board() {
 
   // --- Filter States (now managed within Board and passed to BoardFilters) ---
   const [filterText, setFilterText] = useState("");
-  const [sortBy, setSortBy] = useState("createdAt"); // Default sort by creation date
+  const [sortBy, setSortBy] = useState<keyof TaskType | "shopName">("createdAt"); // More specific type for sortBy
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc"); // Default sort descending
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -8521,7 +8536,8 @@ export default function Board() {
 
     try {
       const res = await fetch("/api/tasks");
-      const json = await res.json();
+      // FIX (Line 8723 equivalent): Type json response
+      const json: { tasks: TaskType[] } = await res.json();
       const taskArray: TaskType[] = Array.isArray(json.tasks) ? json.tasks : [];
 
       // Filter tasks based on user role and showAllTasksMode
@@ -8555,7 +8571,7 @@ export default function Board() {
       localStorage.setItem("seenTaskIds", JSON.stringify(Array.from(seenTaskIds)));
 
       setTasks(relevantTasks); // Update the main tasks state
-    } catch (err) {
+    } catch (err: unknown) { // FIX: Type caught error as unknown
       console.error("❌ Error fetching tasks:", err);
       toast.error("Failed to fetch tasks.");
     } finally {
@@ -8631,7 +8647,7 @@ export default function Board() {
       });
       toast.success("Task status updated!");
       fetchTasks(); // Re-fetch to ensure data consistency
-    } catch (error) {
+    } catch (error: unknown) { // FIX: Type caught error as unknown
       console.error("Failed to update task status:", error);
       toast.error("Failed to update task status.");
       setTasks(tasks); // Revert optimistic update
@@ -8668,7 +8684,7 @@ export default function Board() {
                 if (floatingTask && floatingTask.id === taskId) {
                   setFloatingTask(null);
                 }
-              } catch (err) {
+              } catch (err: unknown) { // FIX: Type caught error as unknown
                 console.error("Failed to delete task", err);
                 toast.error("Failed to delete task.");
               } finally {
@@ -8710,8 +8726,9 @@ export default function Board() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.details || "Failed to update task.");
+        // FIX (Line 8913 equivalent): Type errorData
+        const errorData: { details?: string; error?: string } = await res.json();
+        throw new Error(errorData.details || errorData.error || "Failed to update task.");
       }
 
       toast.success("Task updated successfully!");
@@ -8720,9 +8737,9 @@ export default function Board() {
       if (floatingTask && floatingTask.id === taskId) {
         setFloatingTask(prev => prev ? { ...prev, ...updatedFields } : null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) { // FIX (Line 8944 equivalent): Type caught error as unknown
       console.error("Failed to update task", err);
-      toast.error(`Failed to update task: ${err.message || 'Unknown error'}`);
+      toast.error(`Failed to update task: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -8793,12 +8810,10 @@ export default function Board() {
     toast.success("Tasks exported to CSV!");
   };
 
-  // --- Memoized unique options for dropdowns (passed to BoardFilters) ---
-  const uniqueCategoriesForDisplay = useMemo(() => {
-    // We pass the full TASK_CATEGORIES array (label + value) to BoardFilters
-    // so it can display labels and use values for internal selection.
-    return TASK_CATEGORIES;
-  }, []);
+  // ✅ Deleted: Line 8797 equivalent - uniqueCategoriesForDisplay is unused as TASK_CATEGORIES is passed directly
+  // const uniqueCategoriesForDisplay = useMemo(() => {
+  //   return TASK_CATEGORIES;
+  // }, []);
 
 
   const uniqueStatuses = useMemo(() => {
@@ -8833,13 +8848,14 @@ export default function Board() {
       filtered = filtered.filter(task =>
         task.title?.toLowerCase().includes(lowerFilterText) ||
         task.description?.toLowerCase().includes(lowerFilterText) ||
-        task.customFields?.shopName?.toLowerCase().includes(lowerFilterText) ||
-        task.customFields?.email?.toLowerCase().includes(lowerFilterText) ||
-        task.customFields?.phone?.toLowerCase().includes(lowerFilterText) ||
+        // Check for existence before calling .toLowerCase() on customFields properties
+        (task.customFields?.shopName && (task.customFields.shopName as string).toLowerCase().includes(lowerFilterText)) ||
+        (task.customFields?.email && (task.customFields.email as string).toLowerCase().includes(lowerFilterText)) ||
+        (task.customFields?.phone && (task.customFields.phone as string).toLowerCase().includes(lowerFilterText)) ||
         task.assignees?.some(a => (a.name || a.email)?.toLowerCase().includes(lowerFilterText)) ||
         task.status?.toLowerCase().includes(lowerFilterText) ||
         task.assignerName?.toLowerCase().includes(lowerFilterText) ||
-        task.customFields?.location?.toLowerCase().includes(lowerFilterText) ||
+        (task.customFields?.location && (task.customFields.location as string).toLowerCase().includes(lowerFilterText)) ||
         task.tags?.some(tag => tag.toLowerCase().includes(lowerFilterText)) ||
         task.notes?.some(note => note.content?.toLowerCase().includes(lowerFilterText))
       );
@@ -8867,7 +8883,7 @@ export default function Board() {
     if (selectedAssignees.length > 0) {
       filtered = filtered.filter(task =>
         task.assignees?.some(assignee =>
-          assignee && (assignee.name || assignee.email) && selectedAssignees.includes(assignee.name || assignee.email)
+          assignee && (assignee.name || assignee.email) && selectedAssignees.includes(assignee.name || assignee.email || '')
         )
       );
     }
@@ -8910,16 +8926,17 @@ export default function Board() {
 
     // 6. Sorting
     filtered.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      // FIX (Lines 8913-8944 equivalent): Replace any with proper types
+      let aValue: string | number | Date | undefined | null;
+      let bValue: string | number | Date | undefined | null;
 
       switch (sortBy) {
         case "createdAt":
-          aValue = new Date(a.createdAt || 0).getTime();
-          bValue = new Date(b.createdAt || 0).getTime();
+          aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           break;
         case "dueDate":
-          aValue = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+          aValue = a.dueDate ? new Date(a.dueDate).getTime() : Infinity; // Tasks with no due date come last
           bValue = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
           break;
         case "title":
@@ -8931,25 +8948,33 @@ export default function Board() {
           bValue = b.status || "";
           break;
         case "shopName":
-            aValue = a.customFields?.shopName || "";
-            bValue = b.customFields?.shopName || "";
+            // Access customFields safely and ensure it's a string
+            aValue = (a.customFields && typeof a.customFields === 'object' && a.customFields.shopName)
+                       ? String(a.customFields.shopName) : "";
+            bValue = (b.customFields && typeof b.customFields === 'object' && b.customFields.shopName)
+                       ? String(b.customFields.shopName) : "";
             break;
         case "priority":
           const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2, "": 3, undefined: 3, null: 3 };
           aValue = priorityOrder[String(a.priority).toLowerCase()] ?? 3;
           bValue = priorityOrder[String(b.priority).toLowerCase()] ?? 3;
           break;
+        // Handle other fields dynamically if sortBy can be a direct key of TaskType
         default:
-          aValue = (a as any)[sortBy] || "";
-          bValue = (b as any)[sortBy] || "";
+          // Ensure that sortBy is a key of TaskType or a custom field key that can be directly accessed
+          const safeSortBy = sortBy as keyof TaskType; // Cast to known key
+          aValue = a[safeSortBy] as typeof aValue; // Access property using the key
+          bValue = b[safeSortBy] as typeof bValue;
       }
 
+      // Handle number comparison
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
+      // Handle string comparison (case-insensitive)
       return sortDirection === "asc"
-        ? String(aValue).toLowerCase().localeCompare(String(bValue).toLowerCase())
-        : String(bValue).toLowerCase().localeCompare(String(aValue).toLowerCase());
+        ? String(aValue || '').toLowerCase().localeCompare(String(bValue || '').toLowerCase())
+        : String(bValue || '').toLowerCase().localeCompare(String(aValue || '').toLowerCase());
     });
 
     return filtered;
