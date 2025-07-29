@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
-import type { NextApiRequest } from "next";
-import type { RouteContext } from "next"; // ✅ Add this line if using Next 14+
+import type { RouteContext } from "next"; // Optional, but for clarity
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } } // ✅ Destructure with correct type
+  context: { params: { id: string } } // ✅ Correct shape for context
 ) {
   try {
-    const subtaskId = params.id;
+    const subtaskId = context.params.id;
 
     if (!subtaskId) {
       return NextResponse.json({ error: "Missing subtask ID" }, { status: 400 });
@@ -33,3 +32,4 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update subtask" }, { status: 500 });
   }
 }
+

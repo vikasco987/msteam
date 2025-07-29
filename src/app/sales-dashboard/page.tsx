@@ -700,12 +700,13 @@
 
 
 
+// FILE: ./src/app/sales-dashboard/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs"; // 👈 import Clerk user hook
-import { useRouter } from "next/navigation"; // 👈 for client-side redirect
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 // ... imports for charts and components
 import { Card } from "../components/ui/card";
@@ -713,11 +714,11 @@ import RevenueByAssigneeChart from "../components/charts/RevenueByAssigneeChart"
 import MonthReportTable from "../components/tables/MonthReportTable";
 import WeekReportTable from "../components/tables/WeekReportTable";
 import DayReportTable from "../components/tables/DayReportTable";
-import CumulativeRevenueChart from "../components/charts/CumulativeRevenueChart";
+// import CumulativeRevenueChart from "../components/charts/CumulativeRevenueChart"; // REMOVED: Unused
 import GoalProgress from "../components/charts/GoalProgress";
 import AllReportsSection from "../components/tables/AllReportsSection";
-import CumulativeDayChart from "../components/charts/CumulativeDayChart";
-import CumulativeMonthChart from "../components/charts/CumulativeMonthChart";
+// import CumulativeDayChart from "../components/charts/CumulativeDayChart"; // REMOVED: Unused
+// import CumulativeMonthChart from "../components/charts/CumulativeMonthChart"; // REMOVED: Unused
 import CumulativeChartSwitcher from "../components/charts/CumulativeChartSwitcher";
 
 import {
@@ -729,6 +730,31 @@ import {
   Tooltip,
 } from "recharts";
 
+// Define interfaces for your data structures to avoid 'any'
+interface SalesStats {
+  totalRevenue: number;
+  amountReceived: number;
+  pendingAmount: number;
+  totalSales: number;
+}
+
+interface MonthlyChartData {
+  month: string;
+  revenue: number;
+}
+
+interface AssigneeChartData {
+  assignee: string;
+  revenue: number; // Assuming revenue is a number, adjust if it's a different type
+}
+
+// Assuming DayReportTable, WeekReportTable, MonthReportTable, and AllReportsSection
+// expect an array of objects. You might have specific types for these in your project.
+// For now, I'll use a generic type or you can replace these with your actual types.
+// Example: interface DayReportEntry { date: string; sales: number; /* ... other fields */ }
+// For simplicity, let's assume they are arrays of objects with varying structures:
+type ReportEntry = Record<string, any>; // A generic object for table data
+
 const tabs = [
   { label: "All Reports", key: "all" },
   { label: "Day", key: "day" },
@@ -738,26 +764,27 @@ const tabs = [
 ];
 
 export default function SalesDashboardPage() {
-  const { user } = useUser(); // 👈 Get user from Clerk
-  const router = useRouter();
+  const { user } = useUser();
+  const router = useRouter(); // Initialize useRouter
 
-  const [stats, setStats] = useState<any>(null);
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [assigneeData, setAssigneeData] = useState<any[]>([]);
-  const [dayData, setDayData] = useState<any[]>([]);
-  const [weekData, setWeekData] = useState<any[]>([]);
-  const [monthTableData, setMonthTableData] = useState<any[]>([]);
-  const [cumulativeData, setCumulativeData] = useState<any[]>([]);
+  // Use specific types instead of 'any'
+  const [stats, setStats] = useState<SalesStats | null>(null);
+  const [monthlyData, setMonthlyData] = useState<MonthlyChartData[]>([]);
+  const [assigneeData, setAssigneeData] = useState<AssigneeChartData[]>([]);
+  const [dayData, setDayData] = useState<ReportEntry[]>([]);
+  const [weekData, setWeekData] = useState<ReportEntry[]>([]);
+  const [monthTableData, setMonthTableData] = useState<ReportEntry[]>([]);
+  const [cumulativeData, setCumulativeData] = useState<ReportEntry[]>([]);
   const [activeTab, setActiveTab] = useState("all");
   const [showGoalProgress, setShowGoalProgress] = useState(false);
-  const [cumulativeDayData, setCumulativeDayData] = useState<any[]>([]);
+  const [cumulativeDayData, setCumulativeDayData] = useState<ReportEntry[]>([]);
 
   // ✅ Redirect if user not admin or master
   useEffect(() => {
     if (user && !["admin", "master"].includes(user?.publicMetadata?.role as string)) {
-      router.push("/unauthorized"); // 👈 or use a 403 page
+      router.push("/unauthorized");
     }
-  }, [user]);
+  }, [user, router]); // FIX: Added 'router' to dependency array
 
   useEffect(() => {
     fetch("/api/stats/user-performance/overview")
@@ -770,7 +797,7 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/monthly")
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: Record<string, number>) => { // FIX: Type data for monthly
         const formatted = Object.entries(data).map(([month, revenue]) => ({
           month,
           revenue: typeof revenue === "number" ? revenue : 0,
@@ -784,10 +811,10 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/by-assignee")
       .then((res) => res.json())
-      .then((res) => {
+      .then((res: Record<string, number>) => { // FIX: Type res for by-assignee
         const formatted = Object.entries(res).map(([assignee, revenue]) => ({
           assignee,
-          revenue,
+          revenue: typeof revenue === "number" ? revenue : 0, // Ensure revenue is number
         }));
         setAssigneeData(formatted);
       })
@@ -798,7 +825,7 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/day-report?page=1&limit=1000")
       .then((res) => res.json())
-      .then((json) => {
+      .then((json: { data: ReportEntry[] }) => { // FIX: Type json for day-report
         setDayData(json.data || []);
         setCumulativeDayData(json.data || []);
       })
@@ -806,7 +833,7 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/week-report?page=1&limit=1000")
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: { data: ReportEntry[] }) => { // FIX: Type data for week-report
         setWeekData(data.data);
         setCumulativeData(data.data);
       })
@@ -814,11 +841,11 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/mom-table")
       .then((res) => res.json())
-      .then((res) => {
+      .then((res: { data: ReportEntry[] }) => { // FIX: Type res for mom-table
         setMonthTableData(res.data || []);
       })
       .catch((err) => console.error("Failed to fetch month table:", err));
-  }, []);
+  }, []); // router is not needed here as it's not directly used in the fetches
 
   useEffect(() => {
     if (activeTab !== "charts") {
