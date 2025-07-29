@@ -117,7 +117,8 @@ export const BoardFilters: React.FC<BoardFiltersProps> = ({
             <input
               type="checkbox"
               checked={selected.includes(value)}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => // FIXED LINE 171
+              // The fix is here, explicitly typing the event object
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSelected(
                   e.target.checked
                     ? [...selected, value]
@@ -165,7 +166,7 @@ export const BoardFilters: React.FC<BoardFiltersProps> = ({
     } else {
       // Create a set of all possible item values for accurate comparison
       const allItemValues = new Set(
-        (allItems as any[]).map(item => typeof item === 'string' ? item : item.value)
+        (allItems as (string | { value: string; label: string })[]).map(item => typeof item === 'string' ? item : item.value)
       );
 
       // Check if all items are selected

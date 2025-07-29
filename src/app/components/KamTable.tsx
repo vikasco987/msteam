@@ -26,7 +26,6 @@ import {
   FaUsers,
   FaTasks,
   FaDownload,
-  FaTimesCircle,
   FaCaretDown,
   FaCaretUp,
 } from "react-icons/fa";

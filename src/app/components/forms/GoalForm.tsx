@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   format,
   getISOWeek,
-  startOfMonth,
   addMonths,
   startOfWeek,
   addWeeks,

@@ -1,4 +1,3 @@
-// components/TaskFilters.tsx
 "use client";
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
@@ -9,8 +8,6 @@ import {
   FaDownload,
   FaEye,
   FaEyeSlash,
-  FaArrowUp,
-  FaArrowDown,
   FaEdit,
   FaTimesCircle,
   FaCaretDown,
@@ -191,8 +188,8 @@ export const TaskFilters = ({
 
     if (sortConfig) {
       currentFilteredTasks.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number | undefined; // FIX: Specific type for aValue/bValue
+        let bValue: string | number | undefined; // FIX: Specific type for aValue/bValue
 
         if (sortConfig.key === "pendingAmount") {
           aValue = (Number(a.amount) || 0) - (Number(a.received) || 0);
@@ -225,8 +222,9 @@ export const TaskFilters = ({
           bValue = bAssignee;
         }
         else {
-          aValue = (a as any)[sortConfig.key];
-          bValue = (b as any)[sortConfig.key];
+          // FIX: Type assertion for accessing properties dynamically
+          aValue = (a as Record<string, any>)[sortConfig.key];
+          bValue = (b as Record<string, any>)[sortConfig.key];
         }
 
         if (aValue === undefined && bValue === undefined) return 0;
@@ -417,7 +415,7 @@ export const TaskFilters = ({
                         type="checkbox"
                         className="accent-blue-600"
                         checked={selectedAssignees.includes(assignee)}
-                        onChange={(e) => {
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // FIX: Specific event type
                           const isChecked = e.target.checked;
                           setSelectedAssignees((prev) =>
                             isChecked ? [...prev, assignee] : prev.filter((v) => v !== assignee)
@@ -473,7 +471,7 @@ export const TaskFilters = ({
                       type="checkbox"
                       className="accent-blue-600"
                       checked={selectedCategories.includes(cat.value)}
-                      onChange={(e) => {
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => { // FIX: Specific event type
                         const isChecked = e.target.checked;
                         setSelectedCategories((prev) =>
                           isChecked ? [...prev, cat.value] : prev.filter((v) => v !== cat.value)
