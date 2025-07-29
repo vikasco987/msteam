@@ -1,60 +1,60 @@
-// timeline/route.ts
+// Fix: Add real pagination to your /api/timeline endpoint
+// Create src/app/api/timeline/route.ts
+
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { users } from "@clerk/clerk-sdk-node";
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "../../../../lib/prisma"; // adjust path as per project
 
-export async function GET() {
-  const { userId } = await auth(); // ✅ CORRECT: await the Promise
+export async function GET(req) {
+  const { userId } = await auth();
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const limit = parseInt(searchParams.get("limit") || "10");
+  const page = parseInt(searchParams.get("page") || "1");
+
+  const skip = (page - 1) * limit;
+
   try {
-    const tasks = await prisma.task.findMany({
-      where: {
-        startDate: { not: null },
-        endDate: { not: null },
-      },
-      orderBy: { createdAt: "desc" },
+    const [tasks, total] = await Promise.all([
+      prisma.task.findMany({
+        include: {
+          subtasks: true,
+          notes: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.task.count(),
+    ]);
+
+    const formattedTasks = tasks.map((task) => ({
+      id: task.id,
+      name: task.title,
+      shop: task.shopName || task.outletName || "",
+      customer: task.customerName || "",
+      start: task.startDate || new Date().toISOString().split("T")[0],
+      end: task.endDate || new Date().toISOString().split("T")[0],
+      progress: task.timeline ? parseInt(task.timeline) : 0,
+      assigneeIds: task.assigneeIds,
+      subtasks: task.subtasks.map((s) => ({ id: s.id, title: s.title, completed: s.completed })),
+      notes: task.notes.map((n) => ({ id: n.id, content: n.content, authorName: n.authorName, authorEmail: n.authorEmail })),
+      attachments: task.attachments,
+    }));
+
+    return NextResponse.json({
+      tasks: formattedTasks,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     });
-
-    const enrichedTasks = await Promise.all(
-      tasks.map(async (task) => {
-        let avatarUrl = null;
-
-        try {
-          if (task.assigneeId) {
-            const user = await users.getUser(task.assigneeId);
-            avatarUrl =
-              user.imageUrl ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                // ✅ FIX: Replaced user.fullName with manual construction
-                `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.username || "User"
-              )}`;
-          }
-        } catch {
-          avatarUrl = `https://ui-avatars.com/api/?name=Unknown`;
-        }
-
-        return {
-          id: task.id,
-          name: task.title,
-          start: task.startDate,
-          end: task.endDate,
- 
-          avatarUrl,
-        };
-      })
-    );
-
-    return NextResponse.json({ tasks: enrichedTasks });
-  } catch (error) {
-    console.error("❌ Timeline Fetch Error:", error);
-    return NextResponse.json(
-      { error: "Failed to load tasks" },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("❌ Timeline Fetch Error:", err);
+    return NextResponse.json({ error: "Failed to load tasks" }, { status: 500 });
   }
 }

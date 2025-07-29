@@ -581,6 +581,300 @@
 
 
 
+// 'use client';
+
+// import { useState, useEffect } from 'react';
+// import Link from 'next/link';
+// import { usePathname } from 'next/navigation';
+// import { LayoutDashboard, Users, LogOut, Menu } from 'lucide-react';
+// import * as Tooltip from '@radix-ui/react-tooltip';
+// import { motion } from 'framer-motion';
+
+// // const navItems = [
+// //   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+// //   { label: 'Team Board', icon: Users, href: '/team-board' },
+// //   { label: 'Create Task', icon: LayoutDashboard, href: '/create-task' },
+// //   { label: 'Report', icon: LayoutDashboard, href: '/report' },
+// //   { label: 'Logout', icon: LogOut, href: '/logout' },
+// //   { label: 'KAM', icon: Users, href: '/kam' }, // Add this to navItems
+
+// // ];
+
+// const navItems = [
+//   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+//   { label: 'Team Board', icon: Users, href: '/team-board' },
+//   { label: 'Create Task', icon: LayoutDashboard, href: '/create-task' },
+//   // { label: 'Timeline', icon: LayoutDashboard, href: '/timeline' }, // ✅ NEW
+//   { label: 'Assigned Task', icon: LayoutDashboard, href: '/report' },
+//   { label: 'KAM', icon: Users, href: '/kam' },
+//   { label: 'Timeline', icon: LayoutDashboard, href: '/timeline' },
+//   // { label: 'Logout', icon: LogOut, href: '/logout' },
+//   { label: 'Sales Dashboard', icon: LayoutDashboard, href: '/sales-dashboard' },
+
+// ];
+
+
+// export default function Sidebar() {
+//   const pathname = usePathname();
+//   const [isMobileOpen, setIsMobileOpen] = useState(false);
+//   const [isCollapsed, setIsCollapsed] = useState(false);
+
+//   // Handle Ctrl+B shortcut
+//   useEffect(() => {
+//     const handleKeyDown = (e: KeyboardEvent) => {
+//       if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+//         e.preventDefault();
+//         setIsCollapsed(prev => !prev);
+//       }
+//     };
+//     window.addEventListener('keydown', handleKeyDown);
+//     return () => window.removeEventListener('keydown', handleKeyDown);
+//   }, []);
+
+//   return (
+//     <>
+//       {/* Toggle Button */}
+//       <button
+//         onClick={() => setIsMobileOpen(!isMobileOpen)}
+//         className="md:hidden p-3 fixed top-4 left-4 z-50 bg-white rounded-full shadow-lg"
+//         aria-label="Toggle sidebar"
+//       >
+//         <Menu className="text-purple-700" />
+//       </button>
+
+//       {/* Sidebar */}
+//       <motion.aside
+//         initial={{ width: isCollapsed ? 80 : 256 }}
+//         animate={{ width: isCollapsed ? 80 : 256 }}
+//         transition={{ duration: 0.3 }}
+//         className={`
+//           fixed top-0 left-0 h-screen 
+//           bg-gradient-to-b from-[#1e1b4b] to-[#2e1065] 
+//           text-white z-40
+//           transition-all duration-300 border-r border-violet-900
+//           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
+//           md:translate-x-0 md:static md:flex
+//         `}
+//       >
+//         <div className="flex flex-col h-full p-4 overflow-y-auto relative">
+//           <div
+//             className={`text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent mb-8 transition-opacity duration-300 ${
+//               isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+//             }`}
+//           >
+//             TaskNova
+//           </div>
+
+//           <nav className="flex flex-col gap-2">
+//             {navItems.map((item) => {
+//               const isActive = pathname === item.href;
+//               return (
+//                 <Tooltip.Root key={item.href}>
+//                   <Tooltip.Trigger asChild>
+//                     <Link
+//                       href={item.href}
+//                       onClick={() => setIsMobileOpen(false)}
+//                       className={`flex items-center gap-3 px-4 py-2 rounded-md transition-all font-medium ${
+//                         isActive
+//                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+//                           : 'text-gray-300 hover:text-purple-300 hover:bg-white/5'
+//                       }`}
+//                     >
+//                       <item.icon size={22} />
+//                       {!isCollapsed && <span>{item.label}</span>}
+//                     </Link>
+//                   </Tooltip.Trigger>
+//                   <Tooltip.Portal>
+//                     <Tooltip.Content
+//                       className="bg-black text-white text-sm px-3 py-1 rounded shadow-xl z-[9999]"
+//                       side="right"
+//                       sideOffset={8}
+//                     >
+//                       {item.label}
+//                       <Tooltip.Arrow className="fill-black" />
+//                     </Tooltip.Content>
+//                   </Tooltip.Portal>
+//                 </Tooltip.Root>
+//               );
+//             })}
+//           </nav>
+
+//           {/* Collapse Button */}
+//           <button
+//             onClick={() => setIsCollapsed(!isCollapsed)}
+//             className="absolute top-4 right-4 p-2 bg-white rounded-full text-purple-700 shadow-lg hover:scale-105 transition"
+//             aria-label="Collapse sidebar"
+//           >
+//             {isCollapsed ? '▶' : '◀'}
+//           </button>
+//         </div>
+//       </motion.aside>
+//     </>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 'use client';
+
+// import { useState, useEffect } from 'react';
+// import Link from 'next/link';
+
+
+// import { usePathname } from 'next/navigation';
+// import { LayoutDashboard, Users, LogOut, Menu } from 'lucide-react';
+// import * as Tooltip from '@radix-ui/react-tooltip';
+// import { motion } from 'framer-motion';
+// import { useUser } from '@clerk/nextjs'; // Import useUser
+
+// const allNavItems = [
+//   { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['admin', 'master'] },
+//   { label: 'Team Board', icon: Users, href: '/team-board', roles: ['admin', 'master', 'seller','user'] },
+//   { label: 'Create Task', icon: LayoutDashboard, href: '/create-task', roles: ['admin', 'master','seller','user'] },
+//   { label: 'Assigned Task', icon: LayoutDashboard, href: '/report', roles: ['admin', 'master', 'seller'] },
+//   { label: 'KAM', icon: Users, href: '/kam', roles: ['admin', 'master', 'seller'] },
+//   { label: 'Timeline', icon: LayoutDashboard, href: '/timeline', roles: ['admin', 'master', 'seller'] },
+//   { label: 'Sales Dashboard', icon: LayoutDashboard, href: '/sales-dashboard', roles: ['admin', 'master'] },
+//   // Logout will be added dynamically if user is logged in
+// ];
+
+// export default function Sidebar() {
+//   const pathname = usePathname();
+//   const [isMobileOpen, setIsMobileOpen] = useState(false);
+//   const [isCollapsed, setIsCollapsed] = useState(false);
+//   const { user, isLoaded } = useUser(); // Get user and isLoaded from Clerk
+
+//   const userRole = isLoaded ? (user?.publicMetadata?.role || "guest") : "guest";
+
+//   // Filter nav items based on user role
+//   const visibleNavItems = allNavItems.filter(item =>
+//     item.roles.includes(userRole)
+//   );
+
+//   // Add logout item if user is logged in
+//   if (isLoaded && user) {
+//     visibleNavItems.push({ label: 'Logout', icon: LogOut, href: '/sign-out', roles: ['admin', 'master', 'seller', 'guest'] }); // Sign out route
+//   }
+
+//   // Handle Ctrl+B shortcut
+//   useEffect(() => {
+//     const handleKeyDown = (e: KeyboardEvent) => {
+//       if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+//         e.preventDefault();
+//         setIsCollapsed(prev => !prev);
+//       }
+//     };
+//     window.addEventListener('keydown', handleKeyDown);
+//     return () => window.removeEventListener('keydown', handleKeyDown);
+//   }, []);
+
+//   return (
+//     <>
+//       {/* Toggle Button */}
+//       <button
+//         onClick={() => setIsMobileOpen(!isMobileOpen)}
+//         className="md:hidden p-3 fixed top-4 left-4 z-50 bg-white rounded-full shadow-lg"
+//         aria-label="Toggle sidebar"
+//       >
+//         <Menu className="text-purple-700" />
+//       </button>
+
+//       {/* Sidebar */}
+//       <motion.aside
+//         initial={{ width: isCollapsed ? 80 : 256 }}
+//         animate={{ width: isCollapsed ? 80 : 256 }}
+//         transition={{ duration: 0.3 }}
+//         className={`
+//           fixed top-0 left-0 h-screen 
+//           bg-gradient-to-b from-[#1e1b4b] to-[#2e1065] 
+//           text-white z-40
+//           transition-all duration-300 border-r border-violet-900
+//           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
+//           md:translate-x-0 md:static md:flex
+//         `}
+//       >
+//         <div className="flex flex-col h-full p-4 overflow-y-auto relative">
+//           <div
+//             className={`text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent mb-8 transition-opacity duration-300 ${
+//               isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+//             }`}
+//           >
+//             TaskNova
+//           </div>
+
+//           <nav className="flex flex-col gap-2">
+//             {visibleNavItems.map((item) => {
+//               const isActive = pathname === item.href;
+//               return (
+//                 <Tooltip.Root key={item.href}>
+//                   <Tooltip.Trigger asChild>
+//                     <Link
+//                       href={item.href}
+//                       onClick={() => setIsMobileOpen(false)}
+//                       className={`flex items-center gap-3 px-4 py-2 rounded-md transition-all font-medium ${
+//                         isActive
+//                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+//                           : 'text-gray-300 hover:text-purple-300 hover:bg-white/5'
+//                       }`}
+//                     >
+//                       <item.icon size={22} />
+//                       {!isCollapsed && <span>{item.label}</span>}
+//                     </Link>
+//                   </Tooltip.Trigger>
+//                   <Tooltip.Portal>
+//                     <Tooltip.Content
+//                       className="bg-black text-white text-sm px-3 py-1 rounded shadow-xl z-[9999]"
+//                       side="right"
+//                       sideOffset={8}
+//                     >
+//                       {item.label}
+//                       <Tooltip.Arrow className="fill-black" />
+//                     </Tooltip.Content>
+//                   </Tooltip.Portal>
+//                 </Tooltip.Root>
+//               );
+//             })}
+//           </nav>
+
+//           {/* Collapse Button */}
+//           <button
+//             onClick={() => setIsCollapsed(!isCollapsed)}
+//             className="absolute top-4 right-4 p-2 bg-white rounded-full text-purple-700 shadow-lg hover:scale-105 transition"
+//             aria-label="Collapse sidebar"
+//           >
+//             {isCollapsed ? '▶' : '◀'}
+//           </button>
+//         </div>
+//       </motion.aside>
+//     </>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Sidebar.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -589,32 +883,37 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, LogOut, Menu } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { motion } from 'framer-motion';
+import { useUser } from '@clerk/nextjs'; // Import useUser
 
-// const navItems = [
-//   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
-//   { label: 'Team Board', icon: Users, href: '/team-board' },
-//   { label: 'Create Task', icon: LayoutDashboard, href: '/create-task' },
-//   { label: 'Report', icon: LayoutDashboard, href: '/report' },
-//   { label: 'Logout', icon: LogOut, href: '/logout' },
-//   { label: 'KAM', icon: Users, href: '/kam' }, // Add this to navItems
-
-// ];
-
-const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
-  { label: 'Team Board', icon: Users, href: '/team-board' },
-  { label: 'Create Task', icon: LayoutDashboard, href: '/create-task' },
-  // { label: 'Timeline', icon: LayoutDashboard, href: '/timeline' }, // ✅ NEW
-  { label: 'Report', icon: LayoutDashboard, href: '/report' },
-  { label: 'KAM', icon: Users, href: '/kam' },
-  { label: 'Logout', icon: LogOut, href: '/logout' },
+const allNavItems = [
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['admin', 'master'] },
+  { label: 'Team Board', icon: Users, href: '/team-board', roles: ['admin', 'master', 'seller','user'] },
+  { label: 'Create Task', icon: LayoutDashboard, href: '/create-task', roles: ['admin', 'master','seller','user'] },
+  { label: 'Assigned Task', icon: LayoutDashboard, href: '/report', roles: ['admin', 'master', 'seller'] },
+  { label: 'KAM', icon: Users, href: '/kam', roles: ['admin', 'master', 'seller'] },
+  { label: 'Timeline', icon: LayoutDashboard, href: '/timeline', roles: ['admin', 'master', 'seller','temp'] },
+ //{ label: 'Tish View', icon: LayoutDashboard, href: '/tish', roles: ['admin', 'master', 'seller'] }, // ✅ Added this line
+  { label: 'Sales Dashboard', icon: LayoutDashboard, href: '/sales-dashboard', roles: ['admin', 'master'] },
+  // Logout will be added dynamically if user is logged in
 ];
-
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user, isLoaded } = useUser(); // Get user and isLoaded from Clerk
+
+  const userRole = isLoaded ? (user?.publicMetadata?.role || "guest") : "guest";
+
+  // Filter nav items based on user role
+  const visibleNavItems = allNavItems.filter(item =>
+    item.roles.includes(userRole)
+  );
+
+  // Add logout item if user is logged in
+  if (isLoaded && user) {
+    visibleNavItems.push({ label: 'Logout', icon: LogOut, href: '/sign-out', roles: ['admin', 'master', 'seller', 'guest'] }); // Sign out route
+  }
 
   // Handle Ctrl+B shortcut
   useEffect(() => {
@@ -645,11 +944,11 @@ export default function Sidebar() {
         animate={{ width: isCollapsed ? 80 : 256 }}
         transition={{ duration: 0.3 }}
         className={`
-          fixed top-0 left-0 h-screen 
-          bg-gradient-to-b from-[#1e1b4b] to-[#2e1065] 
+          fixed top-0 left-0 h-screen
+          bg-gradient-to-b from-[#1e1b4b] to-[#2e1065]
           text-white z-40
           transition-all duration-300 border-r border-violet-900
-          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0 md:static md:flex
         `}
       >
@@ -663,7 +962,7 @@ export default function Sidebar() {
           </div>
 
           <nav className="flex flex-col gap-2">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Tooltip.Root key={item.href}>

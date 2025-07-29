@@ -1,184 +1,77 @@
-
-
-
-
-// "use client";
-
-// import React, { useEffect, useState } from "react";
-// import TaskTableView from "@/app/components/TaskTableView";
-// import { Task } from "@/types/task";
-// import { useUser } from "@clerk/nextjs";
-
-// export default function ReportPage() {
-//   const [tasks, setTasks] = useState<Task[]>([]);
-//   const { user, isLoaded } = useUser();
-
-//   useEffect(() => {
-//     const fetchTasks = async () => {
-//       try {
-//         const res = await fetch("/api/tasks");
-//         const data = await res.json();
-
-//         if (Array.isArray(data.tasks)) {
-//           setTasks(data.tasks);
-//         } else {
-//           console.warn("Tasks not in expected array format:", data);
-//           setTasks([]);
-//         }
-//       } catch (err) {
-//         console.error("Failed to fetch tasks:", err);
-//       }
-//     };
-
-//     if (user && (user.publicMetadata.role === "admin" || user.publicMetadata.role === "seller")) {
-//       fetchTasks();
-//     }
-//   }, [user]);
-
-//   if (!isLoaded) return <div>Loading user...</div>;
-
-//   const role = user?.publicMetadata?.role;
-
-//   if (role !== "admin" && role !== "seller") {
-//     return <div className="p-6 text-red-500">⛔ Access Denied: You are not authorized to view this page.</div>;
-//   }
-
-//   return (
-//     <main className="p-6">
-//       <h1 className="text-2xl font-bold mb-4">📋 Task Report</h1>
-//       <TaskTableView tasks={tasks} user={user} />
-//     </main>
-//   );
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// "use client";
-
-// import React, { useEffect, useState } from "react";
-// import TaskTableView from "@/app/components/TaskTableView";
-// import { Task } from "@/types/task";
-// import { useUser } from "@clerk/nextjs";
-
-// export default function ReportPage() {
-//   const [tasks, setTasks] = useState<Task[]>([]);
-//   const { user, isLoaded } = useUser();
-
-//   useEffect(() => {
-//     const fetchTasks = async () => {
-//       try {
-//         const res = await fetch("/api/tasks");
-//         const data = await res.json();
-
-//         if (Array.isArray(data.tasks)) {
-//           setTasks(data.tasks);
-//         } else {
-//           console.warn("Tasks not in expected array format:", data);
-//           setTasks([]);
-//         }
-//       } catch (err) {
-//         console.error("Failed to fetch tasks:", err);
-//       }
-//     };
-
-//     if (user && (user.publicMetadata.role === "admin" || user.publicMetadata.role === "seller")) {
-//       fetchTasks();
-//     }
-//   }, [user]);
-
-//   if (!isLoaded) return <div>Loading user...</div>;
-
-//   const role = user?.publicMetadata?.role;
-
-//   if (role !== "admin" && role !== "seller") {
-//     return <div className="p-6 text-red-500">⛔ Access Denied: You are not authorized to view this page.</div>;
-//   }
-
-//   return (
-//     <main className="p-6">
-//       <h1 className="text-2xl font-bold mb-4">📋 Task Report</h1>
-//       <TaskTableView tasks={tasks} user={user} />
-//     </main>
-//   );
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// pages/ReportPage.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import TaskTableView from "@/app/components/TaskTableView";
-import { Task } from "@/types/task";
-import { useUser } from "@clerk/nextjs";
+import React, { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
+import  TaskTableView  from '../components/TaskTableView'; // Adjust path as needed
+import { Task } from '../../types/task'; // Adjust path as needed
+import toast from 'react-hot-toast';
 
 export default function ReportPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
   const { user, isLoaded } = useUser();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/tasks');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch tasks');
+      }
+      const data = await res.json();
+      if (Array.isArray(data.tasks)) {
+        setTasks(data.tasks);
+      } else {
+        console.warn("API returned non-array for tasks:", data);
+        setTasks([]); // Ensure tasks is always an array
+        toast.error("Failed to load tasks: Invalid data format.");
+      }
+    } catch (err: any) {
+      console.error("Error fetching tasks:", err);
+      setError(err.message || 'An error occurred while fetching tasks.');
+      toast.error(err.message || 'Failed to load tasks.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const res = await fetch("/api/tasks");
-        const data = await res.json();
-        if (Array.isArray(data.tasks)) {
-          setTasks(data.tasks);
-        } else {
-          console.warn("Tasks not in expected array format:", data);
-          setTasks([]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch tasks:", err);
-      }
-    };
-
-    if (user && (user.publicMetadata.role === "admin" || user.publicMetadata.role === "seller")) {
+    // Only fetch if user is loaded and has an allowed role
+    if (isLoaded && user && (user.publicMetadata?.role === "admin" || user.publicMetadata?.role === "seller" || user.publicMetadata?.role === "master")) {
       fetchTasks();
+    } else if (isLoaded && !user) {
+      setLoading(false); // User not logged in
+    } else if (isLoaded && user && user.publicMetadata?.role !== "admin" && user.publicMetadata?.role !== "seller" && user.publicMetadata?.role !== "master") {
+      setLoading(false); // User logged in but unauthorized role
+      setError("⛔ Access Denied: You do not have the required role to view this page.");
     }
-  }, [user]);
+  }, [isLoaded, user]); // Re-fetch when user object or loading state changes
 
-  if (!isLoaded || !user) { // Combined loading and null user check
-    return <div className="p-6 text-gray-500">Loading user...</div>;
+  if (!isLoaded || loading) {
+    return <div className="p-6 text-gray-500 text-center py-8">Loading user and tasks...</div>;
   }
 
-  const role = user.publicMetadata?.role;
+  if (error) {
+    return <div className="text-center py-8 text-red-600">Error: {error}</div>;
+  }
 
-  if (role !== "admin" && role !== "seller") {
-    return <div className="p-6 text-red-500">⛔ Access Denied</div>;
+  // After loading, if user is null (not signed in) or role is not allowed
+  const role = user?.publicMetadata?.role;
+  if (!user || (role !== "admin" && role !== "seller" && role !== "master")) {
+    return <div className="p-6 text-red-500 text-center py-8">
+             ⛔ Access Denied: Please sign in with an authorized account.
+           </div>;
   }
 
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold mb-4">📋 Task Report</h1>
-      <TaskTableView tasks={tasks} user={user} />
+    <main className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">📋 Task Dashboard</h1>
+      {/* Pass setTasks directly to TaskTableView */}
+      <TaskTableView tasks={tasks} user={user} onTasksUpdate={setTasks} />
     </main>
   );
 }
