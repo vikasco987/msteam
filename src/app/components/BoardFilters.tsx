@@ -117,7 +117,7 @@ export const BoardFilters: React.FC<BoardFiltersProps> = ({
             <input
               type="checkbox"
               checked={selected.includes(value)}
-              onChange={(e) =>
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => // FIXED LINE 171
                 setSelected(
                   e.target.checked
                     ? [...selected, value]
@@ -162,27 +162,29 @@ export const BoardFilters: React.FC<BoardFiltersProps> = ({
   ) => {
     if (selectedItems.length === 0) {
       return baseText;
-    } else if (
-      selectedItems.length ===
-      (typeof allItems[0] === "string" ? allItems.length : allItems.length)
-    ) {
-      // This condition needs to correctly compare lengths based on item type
-      // A more robust check might involve mapping allItems to just their values for comparison
-      const allItemValues = (allItems as any[]).map(item => typeof item === 'string' ? item : item.value);
-      if (selectedItems.length === allItemValues.length && selectedItems.every(item => allItemValues.includes(item))) {
-          return `${baseText} (All)`;
-      }
-      return `${baseText} (${selectedItems.length})`; // Fallback if not all are selected but some are
-    } else if (selectedItems.length === 1) {
-      const selectedLabel =
-        typeof allItems[0] === "string"
-          ? selectedItems[0]
-          : (allItems as { value: string; label: string }[]).find(
-              (item) => item.value === selectedItems[0]
-            )?.label || selectedItems[0];
-      return `${baseText}: ${selectedLabel.split(" ")[0]}`; // Take only the first word for brevity
     } else {
-      return `${baseText} (${selectedItems.length})`;
+      // Create a set of all possible item values for accurate comparison
+      const allItemValues = new Set(
+        (allItems as any[]).map(item => typeof item === 'string' ? item : item.value)
+      );
+
+      // Check if all items are selected
+      const areAllSelected = selectedItems.length === allItemValues.size &&
+                             selectedItems.every(item => allItemValues.has(item));
+
+      if (areAllSelected) {
+        return `${baseText} (All)`;
+      } else if (selectedItems.length === 1) {
+        const selectedLabel =
+          typeof allItems[0] === "string"
+            ? selectedItems[0]
+            : (allItems as { value: string; label: string }[]).find(
+                (item) => item.value === selectedItems[0]
+              )?.label || selectedItems[0];
+        return `${baseText}: ${selectedLabel.split(" ")[0]}`; // Take only the first word for brevity
+      } else {
+        return `${baseText} (${selectedItems.length})`;
+      }
     }
   };
 

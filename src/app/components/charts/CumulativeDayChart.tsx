@@ -10,7 +10,13 @@ import {
   Tooltip,
 } from "recharts";
 
-export default function CumulativeDayChart({ data }: { data: any[] }) {
+// Define the type for each data point in the chart
+interface CumulativeDayData {
+  date: string;
+  cumulativeRevenue: number;
+}
+
+export default function CumulativeDayChart({ data }: { data: CumulativeDayData[] }) {
   if (!Array.isArray(data) || data.length === 0) {
     return <p className="text-gray-500">No chart data available</p>;
   }

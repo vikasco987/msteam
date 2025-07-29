@@ -49,9 +49,10 @@ export default function GoalProgress() {
         const performanceData = await performanceRes.json();
         setCurrentMonthPerformance(performanceData);
 
-      } catch (err: any) {
+      } catch (err: unknown) { // FIX: Type caught error as unknown
         console.error("Error fetching goal or performance data:", err);
-        setError(err.message || "An unexpected error occurred.");
+        // Safely access the error message
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
       }
