@@ -1,8 +1,18 @@
+// next.config.js
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ["res.cloudinary.com"],  // ← add this line
+    domains: [
+      'res.cloudinary.com',   // For Cloudinary images
+      'img.clerk.com',        // For Clerk avatars
+      'images.clerk.dev',     // (Optional, for Clerk dev images)
+      'api.dicebear.com',     // For Dicebear Avatars
+    ],
+    // remotePatterns is generally for more complex patterns like different subpaths
+    // For simple hostnames, 'domains' is sufficient and preferred.
+    remotePatterns: [],
   },
 };
 

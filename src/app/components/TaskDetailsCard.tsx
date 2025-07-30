@@ -5049,54 +5049,35 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-// components/TaskDetailsCard.tsx
 "use client";
 
 import React, { useState } from "react";
 import { FaRegClipboard, FaTimes } from "react-icons/fa";
 import toast from "react-hot-toast";
-import type { Task } from "../../types/task"; // Ensure correct path
-
-// Import the Note type here from where it's defintaskeed (likely types/task.ts or types/note.ts)
-// Based on your previous snippet, Note is part of Task interface in types/task.ts
-// If Note is a separate file like src/types/note.ts, adjust the import path accordingly.
-import { Note } from "../../../types/note"; // Assuming Note is defined within types/task.ts
-
+import type { Task } from "../../types/task";
+import { Note } from "../../../types/note";
 import Image from "next/image";
-import { motion } from "framer-motion";
-
-// Import the new NotesModal component
-import NotesModal from "./NotesModal"; // Adjust path as needed based on your folder structure
+import { motion, AnimatePresence } from "framer-motion";
+import NotesModal from "./NotesModal";
+import { PiPushPinSimpleFill } from "react-icons/pi";
 
 interface Props {
   task: Task;
   isAdmin?: boolean;
   onDelete?: (taskId: string) => void;
-  // If you want to update the task's notes from within TaskDetailsCard,
-  // you might need an `onUpdateTask` prop or similar.
   onUpdateTask?: (taskId: string, updatedFields: Partial<Task>) => void;
+  onFloatRequest?: (task: Task) => void;
 }
 
-// Utils
+// --- Utility Functions ---
 const getLabelFromUrl = (url: string): string => {
   const fileName = url.split("/").pop()?.toLowerCase() || "";
   if (fileName.includes("aadhaar")) return "🆔 Aadhaar Card";
   if (fileName.includes("pan")) return "💳 PAN Card";
   if (fileName.includes("selfie")) return "🤳 Selfie Photo";
+  if (fileName.endsWith(".pdf")) return "📄 PDF Document";
   if (fileName.includes("license")) return "🍔 Food License";
   if (fileName.includes("menu")) return "📄 Menu Card";
-  if (fileName.endsWith(".pdf")) return "📄 PDF Document";
   return "📎 Attachment";
 };
 
@@ -5112,20 +5093,87 @@ const isValidUrl = (str: string): boolean => {
 const getDownloadUrl = (url: string): string =>
   url.includes("/upload/") ? url.replace("/upload/", "/upload/fl_attachment/") : url;
 
-const CopyIcon = ({ text }: { text: string }) => (
-  <FaRegClipboard
-    onClick={() => {
-      navigator.clipboard.writeText(text);
-      toast.success("Copied!");
-    }}
-    className="inline ml-2 text-gray-500 cursor-pointer hover:text-purple-600"
-    title="Copy"
-  />
+// --- Components ---
+
+// Animated Copy Icon component
+const CopyIcon = ({ text }: { text: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+
+    setCopied(true);
+    toast.success("Copied!");
+    setTimeout(() => setCopied(false), 1500); // Hide "Copied!" message after 1.5 seconds
+  };
+
+  return (
+    <div className="relative inline-block ml-2">
+      <motion.div
+        onClick={handleCopy}
+        className="text-gray-500 cursor-pointer hover:text-purple-600"
+        title="Copy"
+        whileTap={{ scale: 0.9 }}
+        animate={copied ? { rotate: [0, 10, -10, 0], scale: [1, 1.4, 1] } : {}}
+        transition={{ duration: 0.5 }}
+      >
+        <FaRegClipboard />
+      </motion.div>
+
+      {/* Animated "Copied!" message */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-black text-white px-2 py-1 rounded shadow"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: -10 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.3 }}
+          >
+            Copied!
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Reusable Animated Icon Button for consistency (e.g., for Notes, Float, Copy All)
+const AnimatedIconButton = ({ onClick, title, children, className = "" }: { onClick: () => void; title: string; children: React.ReactNode; className?: string }) => (
+  <motion.button
+    onClick={onClick}
+    title={title}
+    className={`text-gray-500 hover:text-purple-700 p-1 rounded-md ${className}`}
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+  >
+    {children}
+  </motion.button>
 );
 
-export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpdateTask }: Props) {
+// New reusable component for displaying a field with a copy icon
+const FieldWithCopy = ({ label, value }: { label: string; value: string | number | null | undefined }) => {
+  if (value === null || value === undefined || value === "") return null; // Don't render if value is empty
+  const stringValue = String(value); // Ensure value is a string for CopyIcon
+
+  return (
+    <div className="flex items-center gap-1">
+      <p className="mb-0">
+        <strong>{label}:</strong> {stringValue}
+      </p>
+      <CopyIcon text={stringValue} />
+    </div>
+  );
+};
+
+// --- TaskDetailsCard Component ---
+export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpdateTask, onFloatRequest }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  // State for the notes modal
   const [showNotesModal, setShowNotesModal] = useState(false);
 
   const cf = task.customFields || {};
@@ -5133,11 +5181,8 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
 
   const displayAssignerName = task.assigner?.name || task.assignerName || "—";
   const displayAssignerEmail = task.assigner?.email || task.assignerEmail || "";
-
-  // The 'assignees' property is now correctly defined in your Task type
   const displayAssigneeName = task.assignees?.map(a => a?.name || a?.email).filter(Boolean).join(", ") || task.assignee?.name || "—";
   const displayAssigneeEmail = task.assignee?.email || task.assigneeEmail || "";
-
 
   const allValues = [
     task.title,
@@ -5166,15 +5211,16 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
     displayAssignerEmail,
     displayAssigneeName,
     displayAssigneeEmail,
-    // CORRECTED LINE: Iterate over customFields object
     ...(cf ? Object.entries(cf).map(([key, value]) => `${key}: ${value}`) : []),
-  ]
-    .filter(Boolean)
-    .join("\n");
-
+  ].filter(Boolean).join("\n");
 
   const copyAllFields = () => {
-    navigator.clipboard.writeText(allValues);
+    const textarea = document.createElement('textarea');
+    textarea.value = allValues;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
     toast.success("All details copied!");
   };
 
@@ -5189,138 +5235,71 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
     URL.revokeObjectURL(link.href);
   };
 
+  const notesCount = task.notes?.length || 0;
+
   return (
     <div className="text-sm text-gray-700 space-y-2">
       <div className="flex items-center justify-between">
-        {showTitle && (
-          <h3 className="text-lg font-semibold text-purple-800">{task.title}</h3>
-        )}
-        <div className="flex items-center gap-2"> {/* Group buttons */}
-          <button
-            onClick={() => setShowNotesModal(true)}
-            title="Add/View Notes"
-            className="text-gray-500 hover:text-purple-700 p-1 rounded-md"
-          >
-            📝
-          </button>
-          <button
-            onClick={copyAllFields}
-            className="text-sm text-gray-500 hover:text-purple-700 flex items-center gap-1"
-          >
-            <FaRegClipboard />
-            Copy All
-          </button>
+        {showTitle && <h3 className="text-lg font-semibold text-purple-800">{task.title}</h3>}
+        <div className="flex items-center gap-2">
+          <div className="relative inline-block">
+            <AnimatedIconButton onClick={() => setShowNotesModal(true)} title="Add/View Notes">
+              📝
+            </AnimatedIconButton>
+            {notesCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                {notesCount}
+              </span>
+            )}
+          </div>
+          {onFloatRequest && (
+            <AnimatedIconButton onClick={() => onFloatRequest(task)} title="Float">
+              <PiPushPinSimpleFill />
+            </AnimatedIconButton>
+          )}
+          <AnimatedIconButton onClick={copyAllFields} title="Copy All" className="flex items-center">
+            <FaRegClipboard className="mr-1" /> Copy All
+          </AnimatedIconButton>
         </div>
       </div>
 
-      {/* This component always renders details, hiding is handled by the parent (Board.tsx) */}
       <>
-        {task.description && (
-          <p>
-            <strong>📝 Description:</strong> {task.description}
-            <CopyIcon text={String(task.description)} />
-          </p>
-        )}
+        <FieldWithCopy label="📝 Description" value={task.description} />
+        <FieldWithCopy label="🏪 Shop Name" value={cf.shopName} />
+        <FieldWithCopy label="🏷️ Outlet Name" value={cf.outletName} />
+        <FieldWithCopy label="📞 Phone" value={cf.phone} />
+        <FieldWithCopy label="📧 Email" value={cf.email} />
+        <FieldWithCopy label="👤 Customer Name" value={cf.customerName} />
+        <FieldWithCopy label="💰 Package Amount" value={cf.packageAmount} />
+        <FieldWithCopy label="🗓️ Start Date" value={cf.startDate} />
+        <FieldWithCopy label="📅 End Date" value={cf.endDate} />
+        <FieldWithCopy label="⏱️ Timeline" value={cf.timeline} />
 
-        {cf.shopName && (
-          <p>
-            <strong>🏪 Shop Name:</strong> {cf.shopName}
-            <CopyIcon text={String(cf.shopName)} />
-          </p>
-        )}
-        {cf.outletName && (
-          <p>
-            <strong>🏷️ Outlet Name:</strong> {cf.outletName}
-            <CopyIcon text={String(cf.outletName)} />
-          </p>
-        )}
-        {cf.phone && (
-          <p>
-            <strong>📞 Phone:</strong> {cf.phone}
-            <CopyIcon text={String(cf.phone)} />
-          </p>
-        )}
-        {cf.email && (
-          <p>
-            <strong>📧 Email:</strong> {cf.email}
-            <CopyIcon text={String(cf.email)} />
-          </p>
-        )}
-        {cf.customerName && (
-          <p>
-            <strong>👤 Customer Name:</strong> {cf.customerName}
-            <CopyIcon text={String(cf.customerName)} />
-          </p>
-        )}
-
-        {cf.packageAmount && (
-          <p>
-            <strong>💰 Package Amount:</strong> ₹{cf.packageAmount}
-            <CopyIcon text={String(cf.packageAmount)} />
-          </p>
-        )}
-
-        {cf.startDate && (
-          <p>
-            <strong>🗓️ Start Date:</strong> {cf.startDate}
-            <CopyIcon text={String(cf.startDate)} />
-          </p>
-        )}
-
-        {cf.endDate && (
-          <p>
-            <strong>📅 End Date:</strong> {cf.endDate}
-            <CopyIcon text={String(cf.endDate)} />
-          </p>
-        )}
-
-        {cf.timeline && (
-          <p>
-            <strong>⏱️ Timeline:</strong> {cf.timeline}
-            <CopyIcon text={String(cf.timeline)} />
-          </p>
-        )}
-
-        {cf.location &&
-          (isValidUrl(String(cf.location)) ? (
-            <p>
-              <strong>📍 Address:</strong>
-              <a
-                href={String(cf.location)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-              >
-                📍 View on Map
-              </a>
-              <CopyIcon text={String(cf.location)} />
+        {/* Special handling for location due to the conditional link */}
+        {cf.location && (
+          <div className="flex items-center gap-1">
+            <p className="mb-0">
+              <strong>📍 Address:</strong>{" "}
+              {isValidUrl(String(cf.location)) ? (
+                <a
+                  href={String(cf.location)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                >
+                  📍 View on Map
+                </a>
+              ) : (
+                String(cf.location)
+              )}
             </p>
-          ) : (
-            <p>
-              <strong>📍 Address:</strong> {cf.location}
-              <CopyIcon text={String(cf.location)} />
-            </p>
-          ))}
-
-        {cf.accountNumber && (
-          <p>
-            <strong>🏦 Account No.:</strong> {cf.accountNumber}
-            <CopyIcon text={String(cf.accountNumber)} />
-          </p>
-        )}
-        {cf.ifscCode && (
-          <p>
-            <strong>🔢 IFSC Code:</strong> {cf.ifscCode}
-            <CopyIcon text={String(cf.ifscCode)} />
-          </p>
+            <CopyIcon text={String(cf.location)} />
+          </div>
         )}
 
-        {task.tags && task.tags.length > 0 && (
-          <p>
-            <strong>🏷️ Tags:</strong> {task.tags.join(", ")}
-            <CopyIcon text={task.tags.join(", ")} />
-          </p>
-        )}
+        <FieldWithCopy label="🏦 Account No." value={cf.accountNumber} />
+        <FieldWithCopy label="🔢 IFSC Code" value={cf.ifscCode} />
+        <FieldWithCopy label="🏷️ Tags" value={task.tags?.join(", ")} />
 
         {task.attachments && task.attachments.length > 0 && (
           <div>
@@ -5345,7 +5324,7 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
                       onClick={() => handleDownload(url)}
                       className="text-green-600 underline hover:text-green-800"
                     >
-                        ⬇️ {label}
+                      ⬇️ {label}
                     </button>
                   </li>
                 );
@@ -5354,15 +5333,7 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
           </div>
         )}
 
-        {task.createdAt && (
-          <div className="space-y-1">
-            <p>
-              <strong>⏰ Created On:</strong>{" "}
-              {new Date(task.createdAt).toLocaleString()}
-              <CopyIcon text={new Date(task.createdAt).toLocaleString()} />
-            </p>
-          </div>
-        )}
+        <FieldWithCopy label="⏰ Created On" value={task.createdAt ? new Date(task.createdAt).toLocaleString() : null} />
 
         {(displayAssignerName !== "—" || displayAssigneeName !== "—") && (
           <motion.div
@@ -5391,7 +5362,28 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
             <button
               onClick={() => {
                 if (task.id && onDelete) {
-                  onDelete(task.id);
+                  toast((t) => (
+                    <div className="flex flex-col">
+                      <span>Are you sure you want to delete this task?</span>
+                      <div className="flex justify-end gap-2 mt-2">
+                        <button
+                          onClick={() => {
+                            onDelete(task.id);
+                            toast.dismiss(t.id);
+                          }}
+                          className="bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => toast.dismiss(t.id)}
+                          className="bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm hover:bg-gray-400"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ), { duration: Infinity, style: { background: '#fff', color: '#333' } });
                 } else {
                   toast.error("Cannot delete. Task ID missing.");
                 }
@@ -5404,7 +5396,6 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
         )}
       </>
 
-      {/* Existing Preview Modal */}
       {previewUrl && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white max-w-3xl w-full p-4 rounded shadow-lg relative">
@@ -5438,19 +5429,15 @@ export default function TaskDetailsCard({ task, isAdmin = false, onDelete, onUpd
         </div>
       )}
 
-      {/* Notes Modal - Rendered conditionally */}
       {showNotesModal && (
         <NotesModal
           taskId={task.id}
           initialNotes={task.notes}
-          // ✅ FIX: Update the onClose prop to expect Note[] | undefined
           onClose={(updatedNotes?: Note[]) => {
             if (updatedNotes !== undefined && onUpdateTask) {
-              // If NotesModal sends back updated notes, update the parent task state
-              // This assumes you have an onUpdateTask prop to propagate changes
               onUpdateTask(task.id, { notes: updatedNotes });
             }
-            setShowNotesModal(false); // Always close the modal
+            setShowNotesModal(false);
           }}
         />
       )}

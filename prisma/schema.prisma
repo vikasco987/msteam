@@ -8,52 +8,65 @@ datasource db {
 }
 
 model Task {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  title           String
-  status          String
-  tags            String[] @default([])
-  dueDate         DateTime?
-  priority        String?
-  projectId       String?
-  assignerEmail   String?
-  assigneeEmail   String?
-  assignerName    String?
-  assigneeName    String?
-  attachments     String[] @default([])
-  customFields    Json?
+  id     String   @id @default(auto()) @map("_id") @db.ObjectId
+  title  String
+  status String
+  tags   String[] @default([])
+  highlightColor String? // ✅ NEW FIELD for row color persistence
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime?
+  dueDate   DateTime?
+  priority  String?
+  projectId String?
 
-  assigneeId       String?     
-  assigneeIds      String[]    @default([])
+  assignerEmail String?
+  assigneeEmail String?
+  assignerName  String?
+  assigneeName  String?
+  assigneeId    String?
+  assigneeIds   String[] @default([])
+
   createdByClerkId String
 
-  phone            String?
-  email            String?
-  shopName         String?
-  location         String?
-  accountNumber    String?
-  ifscCode         String?
-  restId           String?
-  customerName     String?
-  outletName       String?
-  packageAmount    String?
-  startDate        String?
-  endDate          String?
-  timeline         String?
+  attachments   String[] @default([]) // ✅ For task-related attachments
+  paymentProofs String[] @default([]) // ✅ For payment screenshots (image/pdf)
 
-  aadhaarUrl       String?
-  panUrl           String?
-  selfieUrl        String?
-  chequeUrl        String?
-  menuCardUrls     String[] @default([])
+  amount   Float? // ✅ Task amount
+  received Float? // ✅ Amount received
 
-  /// ✅ One-to-many relation with notes
-  notes            Note[]
+  paymentHistory Json[] @default([]) // ✅ For tracking partial payments
 
-  /// ✅ One-to-many relation with subtasks
-  subtasks         Subtask[] @relation("TaskSubtasks")
+  customFields Json?
+
+  phone         String?
+  email         String?
+  shopName      String?
+  location      String?
+  accountNumber String?
+  ifscCode      String?
+  restId        String?
+  customerName  String?
+  outletName    String?
+  packageAmount String?
+  startDate     String?
+  endDate       String?
+  timeline      String?
+
+  aadhaarUrl   String?
+  panUrl       String?
+  selfieUrl    String?
+  chequeUrl    String?
+  menuCardUrls String[] @default([])
+
+
+ 
+
+  // Relations
+  notes    Note[]
+  subtasks Subtask[] @relation("TaskSubtasks")
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
 }
 
 model Subtask {
@@ -61,18 +74,28 @@ model Subtask {
   title     String
   completed Boolean @default(false)
 
-  taskId    String  @db.ObjectId
-  task      Task    @relation("TaskSubtasks", fields: [taskId], references: [id])
+  taskId String @db.ObjectId
+  task   Task   @relation("TaskSubtasks", fields: [taskId], references: [id])
 }
 
 model Note {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  content     String
-  createdAt   DateTime @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
 
   authorName  String?
   authorEmail String?
 
-  task   Task   @relation(fields: [taskId], references: [id])
   taskId String @db.ObjectId
+  task   Task   @relation(fields: [taskId], references: [id])
+}
+
+model Goal {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  period          String   @unique // ✅ This line makes `period` uniquely identifiable
+  revenueGoal     Float
+  leadsGoal       Int
+  collectionGoal  Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

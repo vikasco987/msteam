@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import React, { useEffect, useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 import {
   BarChart,
   Bar,
@@ -10,7 +10,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-} from "recharts";
+} from 'recharts';
+import FloatingTaskCard from '../components/FloatingTaskCard'; // 🆕 Make sure this path is correct
 
 type UserStat = {
   userName: string;
@@ -21,10 +22,12 @@ type UserStat = {
 
 export default function DashboardPage() {
   const { user } = useUser();
+
   const [userStats, setUserStats] = useState<UserStat[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toISOString().slice(0, 7)
   );
+  const [showFloating, setShowFloating] = useState(false); // 🆕 Floating card visibility
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -33,7 +36,7 @@ export default function DashboardPage() {
         const data = await res.json();
         setUserStats(data);
       } catch (err) {
-        console.error("Failed to fetch stats:", err);
+        console.error('Failed to fetch stats:', err);
       }
     };
 
@@ -42,25 +45,34 @@ export default function DashboardPage() {
 
   const totalTasks = userStats.reduce((sum, u) => sum + u.taskCount, 0);
   const completedTasks = userStats.reduce((sum, u) => sum + u.completedCount, 0);
-  const completionRate = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+  const completionRate =
+    totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
   const mostActive =
     userStats.length > 0
       ? userStats.reduce((prev, curr) =>
           curr.taskCount > prev.taskCount ? curr : prev
         )
-      : { userName: "N/A", taskCount: 0 };
+      : { userName: 'N/A', taskCount: 0 };
 
   const email =
-    typeof user?.emailAddresses?.[0]?.emailAddress === "string"
+    typeof user?.emailAddresses?.[0]?.emailAddress === 'string'
       ? user.emailAddresses[0].emailAddress
-      : "Unknown";
+      : 'Unknown';
+
+  const sampleTask = {
+    id: 'task-789',
+    title: '📦 Swiggy Onboarding',
+    status: 'In Progress',
+    description: 'Upload menu and verify documents',
+  };
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Dashboard Overview</h1>
 
       <p className="text-sm text-gray-500 mb-4">
-        Logged in as: {user?.username || email} ({String(user?.publicMetadata?.role || "user")})
+        Logged in as: {user?.username || email} (
+        {String(user?.publicMetadata?.role || 'user')})
       </p>
 
       <div className="mb-4">
@@ -89,6 +101,22 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      <div className="mb-4">
+        <button
+          onClick={() => setShowFloating(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+        >
+          Open Floating Task
+        </button>
+      </div>
+
+      {showFloating && (
+        <FloatingTaskCard
+          task={sampleTask}
+          onClose={() => setShowFloating(false)}
+        />
+      )}
 
       <div className="bg-white rounded-xl shadow p-4 h-96">
         <h2 className="text-xl font-semibold mb-4">📊 User Task Comparison</h2>

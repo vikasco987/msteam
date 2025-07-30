@@ -61,17 +61,65 @@ export default function KamPage() {
 
   const role = user?.publicMetadata?.role;
 
-  if (role !== "admin" && role !== "master") {
+   if (role !== "admin" && role !== "seller" && role !== "master") {
     return (
       <div className="p-6 text-red-500">
         ⛔ Access Denied: You are not authorized to view this page.
       </div>
     );
   }
-
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <KamTableView />
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// "use client";
+
+// import React from "react";
+// import { useUser } from "@clerk/nextjs";
+// import KamTableView from "../components/KamTable";
+// import SecondaryNavbar from "../components/SecondaryNavbar";
+
+// export default function KamPage() {
+//   const { user, isLoaded } = useUser();
+
+//   if (!isLoaded) {
+//     return <div className="p-6">Loading user...</div>;
+//   }
+
+//   const role = user?.publicMetadata?.role;
+
+//   const isAuthorized = role === "admin" || role === "master";
+
+//   return (
+//     <main className="min-h-screen bg-gray-50">
+//       <SecondaryNavbar />
+
+//       {!isAuthorized ? (
+//         <div className="p-6 text-red-500">
+//           ⛔ Access Denied: You are not authorized to view this page.
+//         </div>
+//       ) : (
+//         <div className="p-6">
+//           <KamTableView />
+//         </div>
+//       )}
+//     </main>
+//   );
+// }
