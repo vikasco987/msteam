@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
-// import type { RouteContext } from "next"; // Optional, but for clarity
+import type { RouteContext } from "next";
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { id: string } } // ✅ Correct shape for context
+  { params }: RouteContext
 ) {
   try {
-    const subtaskId = context.params.id;
+    const subtaskId = params.id;
 
     if (!subtaskId) {
       return NextResponse.json({ error: "Missing subtask ID" }, { status: 400 });
@@ -32,5 +32,3 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update subtask" }, { status: 500 });
   }
 }
-
-//aaha32rthyju

@@ -1,115 +1,3 @@
-// // Path: src/app/api/tasks/[id]/attachments/route.ts
-
-// import { NextRequest, NextResponse } from "next/server";
-// import { prisma } from "../../../../../../lib/prisma";
-// import { auth } from "@clerk/nextjs/server";
-
-// // PATCH: Replace an attachment
-// export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-//   const { userId } = await auth();
-//   if (!userId) {
-//     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-//   }
-
-//   try {
-//     const { oldUrl, newUrl } = await req.json();
-
-//     if (!oldUrl || !newUrl) {
-//       return NextResponse.json({ error: "Missing oldUrl or newUrl" }, { status: 400 });
-//     }
-
-//     const task = await prisma.task.findUnique({ where: { id: params.id } });
-//     if (!task) {
-//       return NextResponse.json({ error: "Task not found" }, { status: 404 });
-//     }
-
-//     const currentAttachments = task.attachments || [];
-
-//     if (!currentAttachments.includes(oldUrl)) {
-//       return NextResponse.json({ error: "Old attachment not found in task" }, { status: 400 });
-//     }
-
-//     const updatedAttachments = currentAttachments.map((url) => url === oldUrl ? newUrl : url);
-
-//     const updatedTask = await prisma.task.update({
-//       where: { id: params.id },
-//       data: {
-//         attachments: updatedAttachments,
-//         updatedAt: new Date(),
-//       },
-//     });
-
-//     return NextResponse.json({ success: true, task: updatedTask });
-//   } catch (err) {
-//     console.error("❌ PATCH /api/tasks/[id]/attachments error:", err);
-
-//     if (err instanceof SyntaxError) {
-//       return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-//     }
-
-//     return NextResponse.json({ error: "Server error", details: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
-//   }
-// }
-
-// // POST: Add a new attachment
-// export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-//   const { userId } = await auth();
-//   if (!userId) {
-//     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-//   }
-
-//   try {
-//     const { url } = await req.json();
-
-//     if (!url || typeof url !== "string") {
-//       return NextResponse.json({ error: "Attachment URL is required." }, { status: 400 });
-//     }
-
-//     await prisma.task.update({
-//       where: { id: params.id },
-//       data: {
-//         attachments: { push: url },
-//         updatedAt: new Date(),
-//       },
-//     });
-
-//     return NextResponse.json({ message: "Attachment added" });
-//   } catch (err) {
-//     console.error("❌ POST /api/tasks/[id]/attachments error:", err);
-
-//     if (err instanceof SyntaxError) {
-//       return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-//     }
-
-//     return NextResponse.json({ error: "Server error", details: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
-//   }
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Path: src/app/api/tasks/[id]/attachments/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
@@ -137,7 +25,10 @@ function extractPublicId(url: string): string | null {
 }
 
 // ✅ PATCH: Replace an attachment
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } } // This is the correct and working type for App Router dynamic segments
+) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -167,7 +58,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // ✅ POST: Add a new attachment
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } } // This is the correct and working type for App Router dynamic segments
+) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -188,7 +82,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // ✅ DELETE: Remove an attachment and delete from Cloudinary
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } } // This is the correct and working type for App Router dynamic segments
+) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -222,12 +119,3 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: "Server error", details: err instanceof Error ? err.message : err }, { status: 500 });
   }
 }
-
-
-
-
-
-
-
-
-
