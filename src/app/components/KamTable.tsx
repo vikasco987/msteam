@@ -47,7 +47,7 @@ interface Task {
   assignees?: { name?: string; email?: string }[];
   amount?: number | null;
   received?: number | null;
-  customFields?: Record<string, any>;
+  customFields?: Record<string, string | number>;
   highlightColor?: string;
   status?: "todo" | "inprogress" | "done" | "Archived";
 }
@@ -241,8 +241,8 @@ export default function KamTableView() {
 
     if (sortConfig !== null) {
       currentTasks.sort((a: Task, b: Task) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number;;
+        let bValue: string | number;;
 
         if (sortConfig.key === "pendingAmount") {
           aValue = (Number(a.amount) || 0) - (Number(a.received) || 0);
@@ -278,11 +278,10 @@ export default function KamTableView() {
           aValue = aAssignee;
           bValue = bAssignee;
         }
-        else {
-          aValue = (a as any)[sortConfig.key];
-          bValue = (b as any)[sortConfig.key];
-        }
-
+       else {
+  aValue = a[sortConfig.key as keyof Task] as string | number;
+  bValue = b[sortConfig.key as keyof Task] as string | number;
+}
         if (aValue === undefined && bValue === undefined) return 0;
         if (aValue === undefined) return sortConfig.direction === "ascending" ? 1 : -1;
         if (bValue === undefined) return sortConfig.direction === "ascending" ? -1 : 1;
@@ -333,6 +332,29 @@ export default function KamTableView() {
           : t
       )
     );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     setEditedStatusValues((prev) => ({ ...prev, [taskId]: value }));
 
     setIsSaving(`${taskId}-status`);
@@ -479,6 +501,23 @@ export default function KamTableView() {
     setSortConfig({ key, direction });
   };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
   const getSortIcon = (key: keyof Task | "pendingAmount" | "daysRemaining") => {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
