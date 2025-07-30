@@ -1021,7 +1021,6 @@
 
 
 
-
 // Sidebar.tsx
 'use client';
 
@@ -1033,16 +1032,15 @@ import {
   Users,
   LogOut,
   Menu,
-  ClipboardList, // For Create Task
-  ClipboardCheck, // For Assigned Task
-  Building2, // For KAM (Key Account Manager / Company)
-  LineChart, // For Timeline
-  ShoppingCart, // For Sales Dashboard
-  ListChecks // Another option for Task related stuff
+  ClipboardList,
+  ClipboardCheck,
+  Building2,
+  LineChart,
+  ShoppingCart,
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { motion } from 'framer-motion';
-import { useUser } from '@clerk/nextjs'; // Import useUser
+import { useUser } from '@clerk/nextjs';
 
 const allNavItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['admin', 'master'] },
@@ -1051,44 +1049,41 @@ const allNavItems = [
   { label: 'Assigned Task', icon: ClipboardCheck, href: '/report', roles: ['admin', 'master', 'seller'] },
   { label: 'KAM', icon: Building2, href: '/kam', roles: ['admin', 'master', 'seller'] },
   { label: 'Timeline', icon: LineChart, href: '/timeline', roles: ['admin', 'master', 'seller', 'temp'] },
-  //{ label: 'Tish View', icon: LayoutDashboard, href: '/tish', roles: ['admin', 'master', 'seller'] }, // ✅ Added this line
   { label: 'Sales Dashboard', icon: ShoppingCart, href: '/sales-dashboard', roles: ['admin', 'master'] },
-  // Logout will be added dynamically if user is logged in
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user, isLoaded } = useUser(); // Get user and isLoaded from Clerk
+  // Initially collapsed for desktop, will expand on hover
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const { user, isLoaded } = useUser();
 
   const userRole = isLoaded ? (user?.publicMetadata?.role || "guest") : "guest";
 
-  // Filter nav items based on user role
   const visibleNavItems = allNavItems.filter(item =>
     item.roles.includes(userRole)
   );
 
-  // Add logout item if user is logged in
   if (isLoaded && user) {
-    visibleNavItems.push({ label: 'Logout', icon: LogOut, href: '/sign-out', roles: ['admin', 'master', 'seller', 'guest'] }); // Sign out route
+    visibleNavItems.push({ label: 'Logout', icon: LogOut, href: '/sign-out', roles: ['admin', 'master', 'seller', 'guest'] });
   }
 
-  // Handle Ctrl+B shortcut
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key.toLowerCase() === 'b') {
-        e.preventDefault();
-        setIsCollapsed(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  // Remove Ctrl+B shortcut as it's no longer needed for this behavior
+  // useEffect(() => {
+  //   const handleKeyDown = (e: KeyboardEvent) => {
+  //     if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+  //       e.preventDefault();
+  //       setIsCollapsed(prev => !prev);
+  //     }
+  //   };
+  //   window.addEventListener('keydown', handleKeyDown);
+  //   return () => window.removeEventListener('keydown', handleKeyDown);
+  // }, []);
 
   return (
     <>
-      {/* Toggle Button */}
+      {/* Toggle Button for Mobile */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         className="md:hidden p-3 fixed top-4 left-4 z-50 bg-white rounded-full shadow-lg"
@@ -1099,9 +1094,12 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <motion.aside
-        initial={{ width: isCollapsed ? 80 : 256 }}
+        initial={false} // Disable initial animation as we control it with animate prop
         animate={{ width: isCollapsed ? 80 : 256 }}
         transition={{ duration: 0.3 }}
+        // Event handlers for hover
+        onMouseEnter={() => setIsCollapsed(false)}
+        onMouseLeave={() => setIsCollapsed(true)}
         className={`
           fixed top-0 left-0 h-screen
           bg-gradient-to-b from-[#1e1b4b] to-[#2e1065]
@@ -1109,12 +1107,13 @@ export default function Sidebar() {
           transition-all duration-300 border-r border-violet-900
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0 md:static md:flex
+          overflow-hidden // Hide overflow content when collapsed
         `}
       >
-        <div className="flex flex-col h-full p-4 overflow-y-auto relative">
+        <div className="flex flex-col h-full p-4 relative">
           <div
             className={`text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent mb-8 transition-opacity duration-300 ${
-              isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+              isCollapsed ? 'opacity-0 w-0' : 'opacity-100' // Changed w-0 for smooth hide
             }`}
           >
             TaskNova
@@ -1136,32 +1135,43 @@ export default function Sidebar() {
                       }`}
                     >
                       <item.icon size={22} />
-                      {!isCollapsed && <span>{item.label}</span>}
+                      {!isCollapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: 'auto' }}
+                          transition={{ duration: 0.2, delay: 0.1 }}
+                          className="whitespace-nowrap overflow-hidden"
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
                     </Link>
                   </Tooltip.Trigger>
-                  <Tooltip.Portal>
-                    <Tooltip.Content
-                      className="bg-black text-white text-sm px-3 py-1 rounded shadow-xl z-[9999]"
-                      side="right"
-                      sideOffset={8}
-                    >
-                      {item.label}
-                      <Tooltip.Arrow className="fill-black" />
-                    </Tooltip.Content>
-                  </Tooltip.Portal>
+                  {isCollapsed && ( // Only show tooltip when collapsed
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="bg-black text-white text-sm px-3 py-1 rounded shadow-xl z-[9999]"
+                        side="right"
+                        sideOffset={8}
+                      >
+                        {item.label}
+                        <Tooltip.Arrow className="fill-black" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  )}
                 </Tooltip.Root>
               );
             })}
           </nav>
 
-          {/* Collapse Button */}
-          <button
+          {/* Removed the manual collapse button */}
+          {/* <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="absolute top-4 right-4 p-2 bg-white rounded-full text-purple-700 shadow-lg hover:scale-105 transition"
             aria-label="Collapse sidebar"
           >
             {isCollapsed ? '▶' : '◀'}
-          </button>
+          </button> */}
         </div>
       </motion.aside>
     </>
