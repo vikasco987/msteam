@@ -26,6 +26,8 @@ model Task {
   assigneeIds     String[] @default([])
 
   createdByClerkId String
+   createdByName    String?      // 👈 Add this
+  createdByEmail   String?      // 👈 Add this
 
   attachments     String[] @default([])
   paymentProofs   String[] @default([])
