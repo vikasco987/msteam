@@ -239,12 +239,115 @@
 
 
 
-// app/layout.tsx
+// // app/layout.tsx
 
+// import './globals.css';
+// import { ReactNode } from 'react';
+// import { ClerkProvider } from '@clerk/nextjs';
+// import ClientLayoutWrapper from '../components/ClientLayoutWrapper';
+
+// export const metadata = {
+//   title: {
+//     default: 'MagicScale',
+//     template: '%s | MagicScale',
+//   },
+//   description: 'Manage your team and tasks with Clerk + Next.js',
+// };
+
+// export default function RootLayout({ children }: { children: ReactNode }) {
+//   return (
+//     <ClerkProvider>
+//       <html lang="en" className="h-full">
+//         <body className="flex h-screen overflow-hidden">
+//           <ClientLayoutWrapper>
+//             {children}
+//           </ClientLayoutWrapper>
+
+//           {/* ✅ Floating Portal Root for ReactDOM.createPortal */}
+//           <div id="portal-root" />
+//         </body>
+//       </html>
+//     </ClerkProvider>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // app/layout.tsx
+// import './globals.css';
+// import { ReactNode } from 'react';
+// import { ClerkProvider } from '@clerk/nextjs';
+// import ClientLayoutWrapper from '../components/ClientLayoutWrapper';
+// import { clearOldClerkEnvironment } from '@/app/components/clearOldClerkEnv';
+
+
+// // ✅ Clear outdated Clerk environment BEFORE ClerkProvider loads
+// if (typeof window !== 'undefined') {
+//   clearOldClerkEnvironment();
+// }
+
+// export const metadata = {
+//   title: {
+//     default: 'MagicScale',
+//     template: '%s | MagicScale',
+//   },
+//   description: 'Manage your team and tasks with Clerk + Next.js',
+// };
+
+// export default function RootLayout({ children }: { children: ReactNode }) {
+//   return (
+//     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+//       <html lang="en" className="h-full">
+//         <body className="flex h-screen overflow-hidden">
+//           <ClientLayoutWrapper>
+//             {children}
+//           </ClientLayoutWrapper>
+
+//           {/* ✅ Floating Portal Root for ReactDOM.createPortal */}
+//           <div id="portal-root" />
+//         </body>
+//       </html>
+//     </ClerkProvider>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// src/app/layout.tsx
 import './globals.css';
 import { ReactNode } from 'react';
 import { ClerkProvider } from '@clerk/nextjs';
 import ClientLayoutWrapper from '../components/ClientLayoutWrapper';
+import { clearOldClerkEnvironment } from '@/app/components/clearOldClerkEnv';
+
+if (typeof window !== 'undefined') {
+  clearOldClerkEnvironment(); // ✅ Run before ClerkProvider
+}
 
 export const metadata = {
   title: {
@@ -256,14 +359,10 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en" className="h-full">
         <body className="flex h-screen overflow-hidden">
-          <ClientLayoutWrapper>
-            {children}
-          </ClientLayoutWrapper>
-
-          {/* ✅ Floating Portal Root for ReactDOM.createPortal */}
+          <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
           <div id="portal-root" />
         </body>
       </html>

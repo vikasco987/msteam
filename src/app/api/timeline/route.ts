@@ -1,11 +1,83 @@
-// Fix: Add real pagination to your /api/timeline endpoint
-// Create src/app/api/timeline/route.ts
+// // Fix: Add real pagination to your /api/timeline endpoint
+// // Create src/app/api/timeline/route.ts
+
+// import { NextResponse } from "next/server";
+// import { auth } from "@clerk/nextjs/server";
+// import { prisma } from "../../../../lib/prisma"; // adjust path as per project
+
+// export async function GET(req) {
+//   const { userId } = await auth();
+
+//   if (!userId) {
+//     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+
+//   const { searchParams } = new URL(req.url);
+//   const limit = parseInt(searchParams.get("limit") || "10");
+//   const page = parseInt(searchParams.get("page") || "1");
+
+//   const skip = (page - 1) * limit;
+
+//   try {
+//     const [tasks, total] = await Promise.all([
+//       prisma.task.findMany({
+//         include: {
+//           subtasks: true,
+//           notes: true,
+//         },
+//         orderBy: { createdAt: "desc" },
+//         skip,
+//         take: limit,
+//       }),
+//       prisma.task.count(),
+//     ]);
+
+//     const formattedTasks = tasks.map((task) => ({
+//       id: task.id,
+//       name: task.title,
+//       shop: task.shopName || task.outletName || "",
+//       customer: task.customerName || "",
+//       start: task.startDate || new Date().toISOString().split("T")[0],
+//       end: task.endDate || new Date().toISOString().split("T")[0],
+//       progress: task.timeline ? parseInt(task.timeline) : 0,
+//       assigneeIds: task.assigneeIds,
+//       subtasks: task.subtasks.map((s) => ({ id: s.id, title: s.title, completed: s.completed })),
+//       notes: task.notes.map((n) => ({ id: n.id, content: n.content, authorName: n.authorName, authorEmail: n.authorEmail })),
+//       attachments: task.attachments,
+//     }));
+
+//     return NextResponse.json({
+//       tasks: formattedTasks,
+//       total,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//     });
+//   } catch (err) {
+//     console.error("❌ Timeline Fetch Error:", err);
+//     return NextResponse.json({ error: "Failed to load tasks" }, { status: 500 });
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "../../../../lib/prisma"; // adjust path as per project
+import { prisma } from "../../../../lib/prisma";
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -15,12 +87,14 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get("limit") || "10");
   const page = parseInt(searchParams.get("page") || "1");
-
   const skip = (page - 1) * limit;
 
   try {
     const [tasks, total] = await Promise.all([
       prisma.task.findMany({
+        where: {
+          createdByClerkId: userId, // ✅ Only tasks YOU created
+        },
         include: {
           subtasks: true,
           notes: true,
@@ -29,7 +103,11 @@ export async function GET(req) {
         skip,
         take: limit,
       }),
-      prisma.task.count(),
+      prisma.task.count({
+        where: {
+          createdByClerkId: userId, // ✅ Count only your created tasks
+        },
+      }),
     ]);
 
     const formattedTasks = tasks.map((task) => ({
@@ -41,8 +119,17 @@ export async function GET(req) {
       end: task.endDate || new Date().toISOString().split("T")[0],
       progress: task.timeline ? parseInt(task.timeline) : 0,
       assigneeIds: task.assigneeIds,
-      subtasks: task.subtasks.map((s) => ({ id: s.id, title: s.title, completed: s.completed })),
-      notes: task.notes.map((n) => ({ id: n.id, content: n.content, authorName: n.authorName, authorEmail: n.authorEmail })),
+      subtasks: task.subtasks.map((s) => ({
+        id: s.id,
+        title: s.title,
+        completed: s.completed,
+      })),
+      notes: task.notes.map((n) => ({
+        id: n.id,
+        content: n.content,
+        authorName: n.authorName,
+        authorEmail: n.authorEmail,
+      })),
       attachments: task.attachments,
     }));
 
@@ -71,71 +158,71 @@ export async function GET(req) {
 
 
 
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import {prisma} from "../../../../lib/prisma"; // Adjust if needed
 
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     const { userId } = auth();
 
-// import { NextRequest, NextResponse } from "next/server";
-// import { auth } from "@clerk/nextjs/server";
-// import {prisma} from "../../../../lib/prisma"; // Adjust if needed
+// //     if (!userId) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
 
-// export async function GET(req: NextRequest) {
-//   try {
-//     const { userId } = auth();
+// //     const searchParams = req.nextUrl.searchParams;
+// //     const page = parseInt(searchParams.get("page") || "1");
+// //     const limit = parseInt(searchParams.get("limit") || "10");
+// //     const skip = (page - 1) * limit;
 
-//     if (!userId) {
-//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-//     }
+// //     // Fetch user role and email from your Users table
+// //     const currentUser = await prisma.user.findUnique({
+// //       where: { userId }, // Assuming userId from Clerk maps to userId in your DB
+// //     });
 
-//     const searchParams = req.nextUrl.searchParams;
-//     const page = parseInt(searchParams.get("page") || "1");
-//     const limit = parseInt(searchParams.get("limit") || "10");
-//     const skip = (page - 1) * limit;
+// //     if (!currentUser) {
+// //       return NextResponse.json({ error: "User not found" }, { status: 404 });
+// //     }
 
-//     // Fetch user role and email from your Users table
-//     const currentUser = await prisma.user.findUnique({
-//       where: { userId }, // Assuming userId from Clerk maps to userId in your DB
-//     });
+// //     const { role, email } = currentUser;
 
-//     if (!currentUser) {
-//       return NextResponse.json({ error: "User not found" }, { status: 404 });
-//     }
+// //     let whereClause = {};
 
-//     const { role, email } = currentUser;
+// //     if (role === "admin" || role === "master") {
+// //       // Admin and Master get all tasks
+// //       whereClause = {};
+// //     } else if (role === "seller") {
+// //       // Sellers get only assigned by them or assigned to them
+// //       whereClause = {
+// //         OR: [
+// //           { assignerEmail: email },
+// //           { assigneeIds: { has: userId } }, // Prisma `has` checks if array includes value
+// //         ],
+// //       };
+// //     } else {
+// //       // Other roles see nothing
+// //       whereClause = {
+// //         id: "", // No task will match this
+// //       };
+// //     }
 
-//     let whereClause = {};
+// //     const tasks = await prisma.task.findMany({
+// //       where: whereClause,
+// //       orderBy: { createdAt: "desc" },
+// //       skip,
+// //       take: limit,
+// //     });
 
-//     if (role === "admin" || role === "master") {
-//       // Admin and Master get all tasks
-//       whereClause = {};
-//     } else if (role === "seller") {
-//       // Sellers get only assigned by them or assigned to them
-//       whereClause = {
-//         OR: [
-//           { assignerEmail: email },
-//           { assigneeIds: { has: userId } }, // Prisma `has` checks if array includes value
-//         ],
-//       };
-//     } else {
-//       // Other roles see nothing
-//       whereClause = {
-//         id: "", // No task will match this
-//       };
-//     }
+// //     const totalCount = await prisma.task.count({ where: whereClause });
 
-//     const tasks = await prisma.task.findMany({
-//       where: whereClause,
-//       orderBy: { createdAt: "desc" },
-//       skip,
-//       take: limit,
-//     });
+// //     return NextResponse.json({ tasks, totalCount });
+// //   } catch (error) {
+// //     console.error("Timeline error:", error);
+// //     return NextResponse.json({ error: "Server error" }, { status: 500 });
+// //   }
+// // }
 
-//     const totalCount = await prisma.task.count({ where: whereClause });
 
-//     return NextResponse.json({ tasks, totalCount });
-//   } catch (error) {
-//     console.error("Timeline error:", error);
-//     return NextResponse.json({ error: "Server error" }, { status: 500 });
-//   }
-// }
 
 
 
@@ -151,63 +238,63 @@ export async function GET(req) {
 
 
 
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { getAuth } from "@clerk/nextjs/server";
+// // import {prisma} from "../../../../lib/prisma";
 
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     const { userId, sessionClaims } = getAuth(req);
 
-// import { NextRequest, NextResponse } from "next/server";
-// import { getAuth } from "@clerk/nextjs/server";
-// import {prisma} from "../../../../lib/prisma";
+// //     if (!userId || !sessionClaims?.email || !sessionClaims?.role) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
 
-// export async function GET(req: NextRequest) {
-//   try {
-//     const { userId, sessionClaims } = getAuth(req);
+// //     const email = sessionClaims.email as string;
+// //     const role = sessionClaims.role as string;
 
-//     if (!userId || !sessionClaims?.email || !sessionClaims?.role) {
-//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-//     }
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1");
+// //     const limit = parseInt(searchParams.get("limit") || "10");
+// //     const skip = (page - 1) * limit;
 
-//     const email = sessionClaims.email as string;
-//     const role = sessionClaims.role as string;
+// //     let whereClause = {};
 
-//     const { searchParams } = new URL(req.url);
-//     const page = parseInt(searchParams.get("page") || "1");
-//     const limit = parseInt(searchParams.get("limit") || "10");
-//     const skip = (page - 1) * limit;
+// //     if (role === "seller") {
+// //       whereClause = {
+// //         OR: [
+// //           { assignerEmail: email },
+// //           { assigneeIds: { has: userId } } // ✅ Prisma `has` for arrays
+// //         ]
+// //       };
+// //     }
 
-//     let whereClause = {};
+// //     // For admin and master, show all tasks (no filter)
 
-//     if (role === "seller") {
-//       whereClause = {
-//         OR: [
-//           { assignerEmail: email },
-//           { assigneeIds: { has: userId } } // ✅ Prisma `has` for arrays
-//         ]
-//       };
-//     }
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit
+// //       }),
+// //       prisma.task.count({ where: whereClause })
+// //     ]);
 
-//     // For admin and master, show all tasks (no filter)
+// //     return NextResponse.json({
+// //       tasks,
+// //       totalCount,
+// //       page,
+// //       totalPages: Math.ceil(totalCount / limit)
+// //     });
 
-//     const [tasks, totalCount] = await Promise.all([
-//       prisma.task.findMany({
-//         where: whereClause,
-//         orderBy: { createdAt: "desc" },
-//         skip,
-//         take: limit
-//       }),
-//       prisma.task.count({ where: whereClause })
-//     ]);
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
 
-//     return NextResponse.json({
-//       tasks,
-//       totalCount,
-//       page,
-//       totalPages: Math.ceil(totalCount / limit)
-//     });
 
-//   } catch (error) {
-//     console.error("Timeline fetch error:", error);
-//     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-//   }
-// }
 
 
 
@@ -228,75 +315,75 @@ export async function GET(req) {
 
 
 
+// // // pages/api/timeline.ts
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { getAuth } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma";
 
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     const { userId, sessionClaims } = getAuth(req);
 
-// // pages/api/timeline.ts
-// import { NextRequest, NextResponse } from "next/server";
-// import { getAuth } from "@clerk/nextjs/server";
-// import { prisma } from "../../../../lib/prisma";
+// //     if (!userId || !sessionClaims?.email || !sessionClaims?.role) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
 
-// export async function GET(req: NextRequest) {
-//   try {
-//     const { userId, sessionClaims } = getAuth(req);
+// //     const email = sessionClaims.email as string;
+// //     const role = sessionClaims.role as string;
 
-//     if (!userId || !sessionClaims?.email || !sessionClaims?.role) {
-//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-//     }
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1");
+// //     const limit = parseInt(searchParams.get("limit") || "10");
+// //     const id = searchParams.get("id"); // Get specific ID if present
+// //     const skip = (page - 1) * limit;
 
-//     const email = sessionClaims.email as string;
-//     const role = sessionClaims.role as string;
+// //     let whereClause: any = {}; // Using any for flexibility with OR condition
 
-//     const { searchParams } = new URL(req.url);
-//     const page = parseInt(searchParams.get("page") || "1");
-//     const limit = parseInt(searchParams.get("limit") || "10");
-//     const id = searchParams.get("id"); // Get specific ID if present
-//     const skip = (page - 1) * limit;
+// //     if (id) {
+// //       // If an ID is provided, fetch only that specific task
+// //       whereClause = { id: id };
+// //     } else if (role === "seller") {
+// //       // For sellers, filter by assigned tasks or tasks created by them
+// //       whereClause = {
+// //         OR: [
+// //           { assignerEmail: email },
+// //           { assigneeIds: { has: userId } } // Prisma `has` for arrays
+// //         ]
+// //       };
+// //     }
+// //     // For admin and master, no additional whereClause is needed, meaning they see all tasks.
 
-//     let whereClause: any = {}; // Using any for flexibility with OR condition
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         orderBy: { createdAt: "desc" },
+// //         skip: id ? undefined : skip, // Skip pagination if fetching a single task by ID
+// //         take: id ? undefined : limit // Take pagination limit if not fetching by ID
+// //       }),
+// //       prisma.task.count({ where: whereClause })
+// //     ]);
 
-//     if (id) {
-//       // If an ID is provided, fetch only that specific task
-//       whereClause = { id: id };
-//     } else if (role === "seller") {
-//       // For sellers, filter by assigned tasks or tasks created by them
-//       whereClause = {
-//         OR: [
-//           { assignerEmail: email },
-//           { assigneeIds: { has: userId } } // Prisma `has` for arrays
-//         ]
-//       };
-//     }
-//     // For admin and master, no additional whereClause is needed, meaning they see all tasks.
+// //     return NextResponse.json({
+// //       tasks,
+// //       totalCount,
+// //       page,
+// //       totalPages: Math.ceil(totalCount / limit)
+// //     });
 
-//     const [tasks, totalCount] = await Promise.all([
-//       prisma.task.findMany({
-//         where: whereClause,
-//         orderBy: { createdAt: "desc" },
-//         skip: id ? undefined : skip, // Skip pagination if fetching a single task by ID
-//         take: id ? undefined : limit // Take pagination limit if not fetching by ID
-//       }),
-//       prisma.task.count({ where: whereClause })
-//     ]);
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
 
-//     return NextResponse.json({
-//       tasks,
-//       totalCount,
-//       page,
-//       totalPages: Math.ceil(totalCount / limit)
-//     });
 
-//   } catch (error) {
-//     console.error("Timeline fetch error:", error);
-//     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-//   }
-// }
 
 
 
 
+// // src/app/api/timelin
 
 
-// src/app/api/timelin
 
 
 
@@ -304,257 +391,1303 @@ export async function GET(req) {
 
 
 
+// // // src/app/api/timeline/route.ts (for Next.js App Router)
 
+// // import { NextResponse } from "next/server";
+// // // ✅ CORRECT IMPORTS for App Router API routes
+// // import { auth, clerkClient } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma"; // Adjust path if your prisma client is elsewhere
 
-// // src/app/api/timeline/route.ts (for Next.js App Router)
+// // export async function GET(req: Request) {
+// //   try {
+// //     const { userId, sessionClaims } = auth(); // Use auth() directly for App Router
 
-// import { NextResponse } from "next/server";
-// // ✅ CORRECT IMPORTS for App Router API routes
-// import { auth, clerkClient } from "@clerk/nextjs/server";
-// import { prisma } from "../../../../lib/prisma"; // Adjust path if your prisma client is elsewhere
+// //     // --- IMPORTANT DEBUGGING CONSOLE LOGS ---
+// //     console.log(`[${new Date().toISOString()}] Backend API (App Router): Incoming request to /api/timeline`);
+// //     console.log(`[${new Date().toISOString()}] Backend API (App Router): Clerk userId:`, userId);
+// //     console.log(`[${new Date().toISOString()}] Backend API (App Router): Clerk sessionClaims:`, sessionClaims);
+// //     // --- END DEBUGGING CONSOLE LOGS ---
 
-// export async function GET(req: Request) {
-//   try {
-//     const { userId, sessionClaims } = auth(); // Use auth() directly for App Router
+// //     // 1. Initial check for Clerk authentication
+// //     if (!userId) {
+// //       console.log(`[${new Date().toISOString()}] Backend API (App Router): ❌ Unauthorized - userId is null.`);
+// //       return NextResponse.json({ error: "Unauthorized: User not authenticated" }, { status: 401 });
+// //     }
 
-//     // --- IMPORTANT DEBUGGING CONSOLE LOGS ---
-//     console.log(`[${new Date().toISOString()}] Backend API (App Router): Incoming request to /api/timeline`);
-//     console.log(`[${new Date().toISOString()}] Backend API (App Router): Clerk userId:`, userId);
-//     console.log(`[${new Date().toISOString()}] Backend API (App Router): Clerk sessionClaims:`, sessionClaims);
-//     // --- END DEBUGGING CONSOLE LOGS ---
+// //     // 2. Attempt to find user in your local database
+// //     let dbUser = await prisma.user.findUnique({
+// //       where: { clerkId: userId }, // 'clerkId' must exist in your User model
+// //     });
 
-//     // 1. Initial check for Clerk authentication
-//     if (!userId) {
-//       console.log(`[${new Date().toISOString()}] Backend API (App Router): ❌ Unauthorized - userId is null.`);
-//       return NextResponse.json({ error: "Unauthorized: User not authenticated" }, { status: 401 });
-//     }
+// //     console.log(`[${new Date().toISOString()}] Backend API (App Router): 🔎 DB user found for clerkId ${userId}:`, !!dbUser);
 
-//     // 2. Attempt to find user in your local database
-//     let dbUser = await prisma.user.findUnique({
-//       where: { clerkId: userId }, // 'clerkId' must exist in your User model
-//     });
+// //     // 3. If user not found in DB, auto-create it
+// //     if (!dbUser) {
+// //       console.log(`[${new Date().toISOString()}] Backend API (App Router): User not found in DB for ${userId}, attempting to auto-create...`);
+// //       try {
+// //         const clerkUser = await clerkClient.users.getUser(userId);
 
-//     console.log(`[${new Date().toISOString()}] Backend API (App Router): 🔎 DB user found for clerkId ${userId}:`, !!dbUser);
+// //         const userEmail = clerkUser.emailAddresses?.[0]?.email_address;
+// //         if (!userEmail) {
+// //           console.error(`[${new Date().toISOString()}] Backend API (App Router): Clerk user ${userId} has no primary email address. Cannot auto-create in DB.`);
+// //           return NextResponse.json({ error: "Unauthorized: User email not found for auto-creation" }, { status: 401 });
+// //         }
 
-//     // 3. If user not found in DB, auto-create it
-//     if (!dbUser) {
-//       console.log(`[${new Date().toISOString()}] Backend API (App Router): User not found in DB for ${userId}, attempting to auto-create...`);
-//       try {
-//         const clerkUser = await clerkClient.users.getUser(userId);
+// //         // Determine the role for the new user.
+// //         // It's best practice to get this from Clerk's publicMetadata or custom claims.
+// //         // If not available or for development, use a sensible default.
+// //         const defaultRole = (sessionClaims?.role as string) || "SELLER"; // Ensure 'role' is in your Clerk JWT Template
 
-//         const userEmail = clerkUser.emailAddresses?.[0]?.email_address;
-//         if (!userEmail) {
-//           console.error(`[${new Date().toISOString()}] Backend API (App Router): Clerk user ${userId} has no primary email address. Cannot auto-create in DB.`);
-//           return NextResponse.json({ error: "Unauthorized: User email not found for auto-creation" }, { status: 401 });
-//         }
+// //         dbUser = await prisma.user.create({
+// //           data: {
+// //             clerkId: userId,
+// //             email: userEmail,
+// //             role: defaultRole,
+// //             name: `${clerkUser.first_name || ''} ${clerkUser.last_name || ''}`.trim() || null,
+// //           },
+// //         });
+// //         console.log(`[${new Date().toISOString()}] Backend API (App Router): ✅ User auto-created in DB for ${userId}.`);
+// //       } catch (clerkError) {
+// //         console.error(`[${new Date().toISOString()}] Backend API (App Router): Error fetching Clerk user or auto-creating in DB for ${userId}:`, clerkError);
+// //         return NextResponse.json(
+// //           { error: "Unauthorized: Failed to retrieve Clerk user data or create DB entry" },
+// //           { status: 401 }
+// //         );
+// //       }
+// //     }
 
-//         // Determine the role for the new user.
-//         // It's best practice to get this from Clerk's publicMetadata or custom claims.
-//         // If not available or for development, use a sensible default.
-//         const defaultRole = (sessionClaims?.role as string) || "SELLER"; // Ensure 'role' is in your Clerk JWT Template
+// //     // Now 'dbUser' is guaranteed to exist in your database
+// //     const userRole = dbUser.role; // Use role from your DB user object
+// //     const userEmail = dbUser.email; // Use email from your DB user object
 
-//         dbUser = await prisma.user.create({
-//           data: {
-//             clerkId: userId,
-//             email: userEmail,
-//             role: defaultRole,
-//             name: `${clerkUser.first_name || ''} ${clerkUser.last_name || ''}`.trim() || null,
-//           },
-//         });
-//         console.log(`[${new Date().toISOString()}] Backend API (App Router): ✅ User auto-created in DB for ${userId}.`);
-//       } catch (clerkError) {
-//         console.error(`[${new Date().toISOString()}] Backend API (App Router): Error fetching Clerk user or auto-creating in DB for ${userId}:`, clerkError);
-//         return NextResponse.json(
-//           { error: "Unauthorized: Failed to retrieve Clerk user data or create DB entry" },
-//           { status: 401 }
-//         );
-//       }
-//     }
+// //     console.log(`[${new Date().toISOString()}] Backend API (App Router): User Email for logic: ${userEmail}`);
+// //     console.log(`[${new Date().toISOString()}] Backend API (App Router): User Role for logic: ${userRole}`);
 
-//     // Now 'dbUser' is guaranteed to exist in your database
-//     const userRole = dbUser.role; // Use role from your DB user object
-//     const userEmail = dbUser.email; // Use email from your DB user object
+// //     // Extract query parameters for pagination/filtering
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1");
+// //     const limit = parseInt(searchParams.get("limit") || "10");
+// //     const id = searchParams.get("id");
+// //     const skip = (page - 1) * limit;
 
-//     console.log(`[${new Date().toISOString()}] Backend API (App Router): User Email for logic: ${userEmail}`);
-//     console.log(`[${new Date().toISOString()}] Backend API (App Router): User Role for logic: ${userRole}`);
+// //     let whereClause: any = {};
 
-//     // Extract query parameters for pagination/filtering
-//     const { searchParams } = new URL(req.url);
-//     const page = parseInt(searchParams.get("page") || "1");
-//     const limit = parseInt(searchParams.get("limit") || "10");
-//     const id = searchParams.get("id");
-//     const skip = (page - 1) * limit;
+// //     if (id) {
+// //       whereClause = { id: id };
+// //     } else if (userRole === "seller") {
+// //       whereClause = {
+// //         OR: [
+// //           { assignerEmail: userEmail },
+// //           { assigneeIds: { has: userId } } // IMPORTANT: Use Clerk's userId here, not dbUser.id
+// //         ]
+// //       };
+// //     }
+// //     // For admin/master, no additional whereClause is needed, meaning they see all tasks.
 
-//     let whereClause: any = {};
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         orderBy: { createdAt: "desc" },
+// //         skip: id ? undefined : skip,
+// //         take: id ? undefined : limit
+// //       }),
+// //       prisma.task.count({ where: whereClause })
+// //     ]);
 
-//     if (id) {
-//       whereClause = { id: id };
-//     } else if (userRole === "seller") {
-//       whereClause = {
-//         OR: [
-//           { assignerEmail: userEmail },
-//           { assigneeIds: { has: userId } } // IMPORTANT: Use Clerk's userId here, not dbUser.id
-//         ]
-//       };
-//     }
-//     // For admin/master, no additional whereClause is needed, meaning they see all tasks.
+// //     return NextResponse.json({
+// //       tasks,
+// //       totalCount,
+// //       page,
+// //       totalPages: Math.ceil(totalCount / limit)
+// //     });
 
-//     const [tasks, totalCount] = await Promise.all([
-//       prisma.task.findMany({
-//         where: whereClause,
-//         orderBy: { createdAt: "desc" },
-//         skip: id ? undefined : skip,
-//         take: id ? undefined : limit
-//       }),
-//       prisma.task.count({ where: whereClause })
-//     ]);
+// //   } catch (error) {
+// //     console.error(`[${new Date().toISOString()}] Backend API (App Router): Timeline fetch failed:`, error);
+// //     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+// //   }
+// // }
 
-//     return NextResponse.json({
-//       tasks,
-//       totalCount,
-//       page,
-//       totalPages: Math.ceil(totalCount / limit)
-//     });
 
-//   } catch (error) {
-//     console.error(`[${new Date().toISOString()}] Backend API (App Router): Timeline fetch failed:`, error);
-//     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-//   }
-// }
 
 
 
 
 
 
+// // // src/app/api/timeline/route.ts
 
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { getAuth } from "@clerk/nextjs/server"; // ✅ Correct for App Router API routes
+// // import { clerkClient } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma";
 
-// // src/app/api/timeline/route.ts
+// // export async function GET(req: NextRequest) {
+// //   const requestTime = new Date().toISOString();
+// //   console.log(`[${requestTime}] 🔍 Request to /api/timeline`);
 
-// import { NextRequest, NextResponse } from "next/server";
-// import { getAuth } from "@clerk/nextjs/server"; // ✅ Correct for App Router API routes
-// import { clerkClient } from "@clerk/nextjs/server";
-// import { prisma } from "../../../../lib/prisma";
+// //   try {
+// //     // --- DEBUG: Log request headers & cookies ---
+// //     console.log(`[${requestTime}] Request headers:`, Object.fromEntries(req.headers));
+// //     console.log(`[${requestTime}] Request cookies:`, req.cookies.getAll());
 
-// export async function GET(req: NextRequest) {
-//   const requestTime = new Date().toISOString();
-//   console.log(`[${requestTime}] 🔍 Request to /api/timeline`);
+// //     // ✅ Correct Clerk auth for App Router API routes
+// //     const { userId, sessionId, sessionClaims } = getAuth(req);
 
-//   try {
-//     // --- DEBUG: Log request headers & cookies ---
-//     console.log(`[${requestTime}] Request headers:`, Object.fromEntries(req.headers));
-//     console.log(`[${requestTime}] Request cookies:`, req.cookies.getAll());
+// //     console.log(`[${requestTime}] Clerk userId:`, userId);
+// //     console.log(`[${requestTime}] Clerk sessionId:`, sessionId);
+// //     console.log(`[${requestTime}] Clerk sessionClaims:`, sessionClaims);
 
-//     // ✅ Correct Clerk auth for App Router API routes
-//     const { userId, sessionId, sessionClaims } = getAuth(req);
+// //     if (!userId) {
+// //       console.error(`[${requestTime}] ❌ Unauthorized - userId is null.`);
+// //       return NextResponse.json(
+// //         { error: "Unauthorized: No active session" },
+// //         { status: 401 }
+// //       );
+// //     }
 
-//     console.log(`[${requestTime}] Clerk userId:`, userId);
-//     console.log(`[${requestTime}] Clerk sessionId:`, sessionId);
-//     console.log(`[${requestTime}] Clerk sessionClaims:`, sessionClaims);
+// //     // --- Get or create user in DB ---
+// //     let dbUser = await prisma.user.findUnique({
+// //       where: { clerkId: userId },
+// //     });
 
-//     if (!userId) {
-//       console.error(`[${requestTime}] ❌ Unauthorized - userId is null.`);
-//       return NextResponse.json(
-//         { error: "Unauthorized: No active session" },
-//         { status: 401 }
-//       );
-//     }
+// //     console.log(`[${requestTime}] DB user exists?`, !!dbUser);
 
-//     // --- Get or create user in DB ---
-//     let dbUser = await prisma.user.findUnique({
-//       where: { clerkId: userId },
-//     });
+// //     if (!dbUser) {
+// //       console.warn(`[${requestTime}] No DB user found, attempting auto-create...`);
+// //       try {
+// //         const clerkUser = await clerkClient.users.getUser(userId);
+// //         const email = clerkUser.emailAddresses?.[0]?.email_address;
 
-//     console.log(`[${requestTime}] DB user exists?`, !!dbUser);
+// //         if (!email) {
+// //           console.error(`[${requestTime}] Clerk user has no primary email.`);
+// //           return NextResponse.json(
+// //             { error: "Unauthorized: Missing email in Clerk profile" },
+// //             { status: 401 }
+// //           );
+// //         }
 
-//     if (!dbUser) {
-//       console.warn(`[${requestTime}] No DB user found, attempting auto-create...`);
-//       try {
-//         const clerkUser = await clerkClient.users.getUser(userId);
-//         const email = clerkUser.emailAddresses?.[0]?.email_address;
+// //         const defaultRole =
+// //           (sessionClaims?.role as string) || "SELLER";
 
-//         if (!email) {
-//           console.error(`[${requestTime}] Clerk user has no primary email.`);
-//           return NextResponse.json(
-//             { error: "Unauthorized: Missing email in Clerk profile" },
-//             { status: 401 }
-//           );
-//         }
+// //         dbUser = await prisma.user.create({
+// //           data: {
+// //             clerkId: userId,
+// //             email,
+// //             role: defaultRole,
+// //             name: `${clerkUser.first_name || ""} ${clerkUser.last_name || ""}`.trim() || null,
+// //           },
+// //         });
 
-//         const defaultRole =
-//           (sessionClaims?.role as string) || "SELLER";
+// //         console.log(`[${requestTime}] ✅ User auto-created in DB`);
+// //       } catch (err) {
+// //         console.error(`[${requestTime}] ❌ Failed to create user in DB:`, err);
+// //         return NextResponse.json(
+// //           { error: "Unauthorized: Clerk fetch or DB insert failed" },
+// //           { status: 401 }
+// //         );
+// //       }
+// //     }
 
-//         dbUser = await prisma.user.create({
-//           data: {
-//             clerkId: userId,
-//             email,
-//             role: defaultRole,
-//             name: `${clerkUser.first_name || ""} ${clerkUser.last_name || ""}`.trim() || null,
-//           },
-//         });
+// //     // --- Role & Email ---
+// //     const userRole = dbUser.role;
+// //     const userEmail = dbUser.email;
 
-//         console.log(`[${requestTime}] ✅ User auto-created in DB`);
-//       } catch (err) {
-//         console.error(`[${requestTime}] ❌ Failed to create user in DB:`, err);
-//         return NextResponse.json(
-//           { error: "Unauthorized: Clerk fetch or DB insert failed" },
-//           { status: 401 }
-//         );
-//       }
-//     }
+// //     console.log(`[${requestTime}] User Email: ${userEmail}`);
+// //     console.log(`[${requestTime}] User Role: ${userRole}`);
 
-//     // --- Role & Email ---
-//     const userRole = dbUser.role;
-//     const userEmail = dbUser.email;
+// //     // --- Pagination params ---
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1");
+// //     const limit = parseInt(searchParams.get("limit") || "10");
+// //     const id = searchParams.get("id");
+// //     const skip = (page - 1) * limit;
 
-//     console.log(`[${requestTime}] User Email: ${userEmail}`);
-//     console.log(`[${requestTime}] User Role: ${userRole}`);
+// //     let whereClause: any = {};
 
-//     // --- Pagination params ---
-//     const { searchParams } = new URL(req.url);
-//     const page = parseInt(searchParams.get("page") || "1");
-//     const limit = parseInt(searchParams.get("limit") || "10");
-//     const id = searchParams.get("id");
-//     const skip = (page - 1) * limit;
+// //     if (id) {
+// //       whereClause = { id };
+// //     } else if (userRole === "seller") {
+// //       whereClause = {
+// //         OR: [
+// //           { assignerEmail: userEmail },
+// //           { assigneeIds: { has: userId } },
+// //         ],
+// //       };
+// //     }
+// //     // Admin/master see all tasks
 
-//     let whereClause: any = {};
+// //     // --- Fetch tasks ---
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         orderBy: { createdAt: "desc" },
+// //         skip: id ? undefined : skip,
+// //         take: id ? undefined : limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
 
-//     if (id) {
-//       whereClause = { id };
-//     } else if (userRole === "seller") {
-//       whereClause = {
-//         OR: [
-//           { assignerEmail: userEmail },
-//           { assigneeIds: { has: userId } },
-//         ],
-//       };
-//     }
-//     // Admin/master see all tasks
+// //     console.log(`[${requestTime}] ✅ Found ${tasks.length} tasks`);
 
-//     // --- Fetch tasks ---
-//     const [tasks, totalCount] = await Promise.all([
-//       prisma.task.findMany({
-//         where: whereClause,
-//         orderBy: { createdAt: "desc" },
-//         skip: id ? undefined : skip,
-//         take: id ? undefined : limit,
-//       }),
-//       prisma.task.count({ where: whereClause }),
-//     ]);
+// //     return NextResponse.json({
+// //       tasks,
+// //       totalCount,
+// //       page,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+// //   } catch (error) {
+// //     console.error(`[${requestTime}] ❌ Timeline fetch failed:`, error);
+// //     return NextResponse.json(
+// //       { error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) },
+// //       { status: 500 }
+// //     );
+// //   }
+// // }
 
-//     console.log(`[${requestTime}] ✅ Found ${tasks.length} tasks`);
 
-//     return NextResponse.json({
-//       tasks,
-//       totalCount,
-//       page,
-//       totalPages: Math.ceil(totalCount / limit),
-//     });
-//   } catch (error) {
-//     console.error(`[${requestTime}] ❌ Timeline fetch failed:`, error);
-//     return NextResponse.json(
-//       { error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) },
-//       { status: 500 }
-//     );
-//   }
-// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma"; // adjust path
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     const { userId, sessionClaims } = auth();
+
+// //     if (!userId || !sessionClaims?.email || !sessionClaims?.role) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
+
+// //     const role = sessionClaims.role as string;
+// //     const email = sessionClaims.email as string;
+
+// //     // Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1");
+// //     const limit = parseInt(searchParams.get("limit") || "10");
+// //     const skip = (page - 1) * limit;
+
+// //     let whereClause: any = {};
+
+// //     if (role === "master") {
+// //       // Master sees nothing
+// //       whereClause = { id: "" };
+// //     } else {
+// //       // Show only tasks created by this user
+// //       whereClause = {
+// //         OR: [
+// //           { createdById: userId },       // If you store creator's Clerk ID
+// //           { assignerEmail: email }       // If you store creator's email
+// //         ]
+// //       };
+// //     }
+
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import {prisma} from "../../../../lib/prisma"; // ✅ Adjust path if needed
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // ✅ Get Clerk user info
+// //     const { userId } = await auth();
+
+// //     if (!userId ) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
+
+// //     const role = sessionClaims.role as string;
+// //     const email = sessionClaims.email as string;
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Role-based task filtering
+// //     let whereClause: any = {};
+
+// //     if (role === "master") {
+// //       // Master role → sees nothing
+// //       whereClause = { id: "" };
+// //     } else {
+// //       // Other roles → see their own created/assigned tasks
+// //       whereClause = {
+// //         OR: [
+// //           { createdById: userId }, // by Clerk ID
+// //           { assignerEmail: email } // or by email
+// //         ]
+// //       };
+// //     }
+
+// //     // ✅ Fetch tasks & total count in parallel
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     // ✅ Format tasks for frontend
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma"; // ✅ adjust to your path
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // ✅ Get Clerk auth info
+// //     const { userId, sessionClaims } = await auth();
+
+// //     if (!userId) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
+
+// //     // ✅ Extract role and email from session claims safely
+// //     const role = sessionClaims?.role as string;
+// //     const email = sessionClaims?.email as string;
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Role-based task filtering
+// //     let whereClause: any = {};
+
+// //     if (role === "master") {
+// //       // Master role → sees nothing
+// //       whereClause = { id: "" };
+// //     } else {
+// //       // Other roles → see their own created/assigned tasks
+// //       whereClause = {
+// //         OR: [
+// //           { createdById: userId }, // By Clerk ID
+// //           { assignerEmail: email } // Or by email
+// //         ]
+// //       };
+// //     }
+
+// //     // ✅ Fetch tasks & total count in parallel
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     // ✅ Format tasks for frontend
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth, currentUser } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma"; // adjust path if needed
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // ✅ Get Clerk auth info
+// //     const { userId } =  await auth();
+
+// //     if (!userId) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
+
+// //     // ✅ Get user object to retrieve email
+// //     const user = await currentUser();
+// //     const email = user?.emailAddresses?.[0]?.emailAddress || "";
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Role-based filtering removed — now just show own tasks
+// //     const whereClause = {
+// //       OR: [
+// //         { createdById: userId }, // By Clerk ID
+// //         { assignerEmail: email } // Or by email
+// //       ]
+// //     };
+
+// //     // ✅ Fetch tasks & total count
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     // ✅ Format tasks for frontend
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth, currentUser } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma"; // adjust path
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // ✅ auth() is synchronous — no await here
+// //     const { userId } = auth();
+
+// //     if (!userId) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
+
+// //     // ✅ currentUser() is async
+// //     const user = await currentUser();
+// //     const email = user?.emailAddresses?.[0]?.emailAddress || "";
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Only own tasks
+// //     const whereClause = {
+// //       OR: [
+// //         { createdById: userId },
+// //         { assignerEmail: email }
+// //       ]
+// //     };
+
+// //     // ✅ Fetch tasks & total
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     // ✅ Format tasks
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: String(error) }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // // src/app/api/timeline/route.ts
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { prisma } from "../../../../lib/prisma"; // adjust path if needed
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // ⚠️ TEMP: Skip Clerk auth completely for testing
+// //     console.warn("⚠️ Clerk auth skipped — test mode");
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Fetch all tasks (no filtering)
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count(),
+// //     ]);
+
+// //     // ✅ Format tasks for frontend
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma";
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // Clerk authentication
+// //     const { userId } = await auth();
+
+// //     // If not logged in → return empty result
+// //     if (!userId) {
+// //       return NextResponse.json({
+// //         tasks: [],
+// //         total: 0,
+// //         page: 1,
+// //         limit: 10,
+// //         totalPages: 0,
+// //       });
+// //     }
+
+// //     // Pagination
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // Show only tasks created by logged-in user
+// //     const whereClause = { createdById: userId };
+
+// //     // Fetch tasks + count
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: { subtasks: true, notes: true },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     // Format tasks for frontend
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt,
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error) {
+// //     console.error("Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // // src/app/api/timeline/route.ts
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server"; // ✅ Clerk auth
+// // import { prisma } from "../../../../lib/prisma";
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // ✅ Get current Clerk user
+// //     const { userId } = await auth();
+
+// //     // ❌ If no user → return empty instead of error
+// //     if (!userId) {
+// //       return NextResponse.json({ tasks: [], total: 0, page: 1, limit: 10, totalPages: 0 }, { status: 200 });
+// //     }
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Only fetch tasks created by current user
+// //     const whereClause = { createdById: userId };
+
+// //     // ✅ Fetch tasks & total count
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     // ✅ Format tasks for frontend
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt,
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error) {
+// //     console.error("❌ Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma"; // adjust path if needed
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     // ✅ Get Clerk logged-in user
+// //     const { userId } = await auth();
+
+// //     if (!userId) {
+// //       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// //     }
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Filter so user only sees their created tasks
+// //     const whereClause = { createdById: userId };
+
+// //     // ✅ Fetch tasks and total count
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     // ✅ Format tasks for frontend
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt,
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error) {
+// //     console.error("❌ Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // // src/app/api/timeline/route.ts
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma";
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     let { userId } = await auth();
+
+// //     // ✅ Dev mode: fallback to a hardcoded test userId if not logged in
+// //     if (!userId) {
+// //       console.warn("⚠ No Clerk user detected — using test userId for local dev.");
+// //       userId = "test-user-123"; // must match a real createdById in your DB
+// //     }
+
+// //     // ✅ Pagination params
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     // ✅ Only return tasks created by this user
+// //     const whereClause = { createdById: userId };
+
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: {
+// //           subtasks: true,
+// //           notes: true,
+// //         },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     const formattedTasks = tasks.map((task) => ({
+// //       id: task.id,
+// //       name: task.title,
+// //       shop: task.shopName || task.outletName || "",
+// //       customer: task.customerName || "",
+// //       start: task.startDate || new Date().toISOString().split("T")[0],
+// //       end: task.endDate || new Date().toISOString().split("T")[0],
+// //       progress: task.timeline ? parseInt(task.timeline) : 0,
+// //       assigneeIds: task.assigneeIds,
+// //       subtasks: task.subtasks.map((s) => ({
+// //         id: s.id,
+// //         title: s.title,
+// //         completed: s.completed,
+// //       })),
+// //       notes: task.notes.map((n) => ({
+// //         id: n.id,
+// //         content: n.content,
+// //         authorName: n.authorName,
+// //         authorEmail: n.authorEmail,
+// //         createdAt: n.createdAt,
+// //       })),
+// //       attachments: task.attachments,
+// //     }));
+
+// //     return NextResponse.json({
+// //       tasks: formattedTasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error) {
+// //     console.error("❌ Timeline fetch error:", error);
+// //     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+// //   }
+// // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // import { NextRequest, NextResponse } from "next/server";
+// // import { auth } from "@clerk/nextjs/server";
+// // import { prisma } from "../../../../lib/prisma";
+
+// // export async function GET(req: NextRequest) {
+// //   try {
+// //     let { userId } = await auth();
+
+// //     if (!userId) {
+// //       console.warn("⚠ No Clerk user detected — using test userId for local dev.");
+// //       userId = "test-user-123";
+// //     }
+
+// //     const { searchParams } = new URL(req.url);
+// //     const page = parseInt(searchParams.get("page") || "1", 10);
+// //     const limit = parseInt(searchParams.get("limit") || "10", 10);
+// //     const skip = (page - 1) * limit;
+
+// //     console.log("📌 Filtering tasks for createdById =", userId);
+
+// //     const whereClause = { createdById: userId };
+
+// //     const [tasks, totalCount] = await Promise.all([
+// //       prisma.task.findMany({
+// //         where: whereClause,
+// //         include: { subtasks: true, notes: true },
+// //         orderBy: { createdAt: "desc" },
+// //         skip,
+// //         take: limit,
+// //       }),
+// //       prisma.task.count({ where: whereClause }),
+// //     ]);
+
+// //     return NextResponse.json({
+// //       tasks,
+// //       total: totalCount,
+// //       page,
+// //       limit,
+// //       totalPages: Math.ceil(totalCount / limit),
+// //     });
+
+// //   } catch (error: any) {
+// //     console.error("❌ Prisma error:", error);
+// //     return NextResponse.json(
+// //       { error: error.message || "Internal server error" },
+// //       { status: 500 }
+// //     );
+// //   }
+// // }

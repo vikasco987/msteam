@@ -4965,6 +4965,19 @@ export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
     return "—";
   };
 
+
+
+
+
+
+
+
+
+
+
+
+
+  
   const pageNumbers = useMemo(() => {
     const pages = [];
     const maxPagesToShow = 5;

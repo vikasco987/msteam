@@ -299,7 +299,7 @@
 
 
 
-//i updated
+// //i updated
 
 
 
@@ -675,3 +675,76 @@ export async function GET(req: NextRequest) {
 export async function OPTIONS() {
   return NextResponse.json({ ok: true });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // use server
+// import { NextRequest, NextResponse } from "next/server";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { prisma } from "../../../../lib/prisma";
+
+// export async function GET(req: NextRequest) {
+//   try {
+//     // ✅ Get Clerk userId from request
+//     const { userId } = getAuth(req);
+//     if (!userId) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     // ✅ Pagination
+//     const { searchParams } = new URL(req.url);
+//     const page = parseInt(searchParams.get("page") || "1", 10);
+//     const limit = parseInt(searchParams.get("limit") || "10", 10);
+//     const skip = (page - 1) * limit;
+
+//     // ✅ Fetch only tasks created by or assigned to the logged-in user
+//     const whereClause = {
+//       OR: [
+//         { createdByClerkId: userId },
+//         { assigneeIds: { has: userId } }
+//       ]
+//     };
+
+//     const [tasks, totalCount] = await Promise.all([
+//       prisma.task.findMany({
+//         where: whereClause,
+//         include: { subtasks: true, notes: true },
+//         orderBy: { createdAt: "desc" },
+//         skip,
+//         take: limit
+//       }),
+//       prisma.task.count({ where: whereClause })
+//     ]);
+
+//     return NextResponse.json({
+//       tasks,
+//       total: totalCount,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(totalCount / limit)
+//     });
+//   } catch (error) {
+//     console.error("❌ GET /api/addfuture error:", error);
+//     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+//   }
+// }
+
+// export async function OPTIONS() {
+//   return NextResponse.json({ ok: true });
+// }

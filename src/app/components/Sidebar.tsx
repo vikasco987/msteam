@@ -1221,6 +1221,7 @@ const allNavItems = [
   { label: 'Assigned Task', icon: ClipboardCheck, href: '/report', roles: ['admin', 'master', 'seller'] },
   { label: 'KAM', icon: Building2, href: '/kam', roles: ['admin', 'master', 'seller'] },
   { label: 'Timeline', icon: LineChart, href: '/timeline', roles: ['admin', 'master', 'seller', 'temp'] },
+    // { label: 'Add Future', icon: ClipboardList, href: '/addfuture', roles: ['admin', 'master', 'seller', 'user'] },
   { label: 'Sales Dashboard', icon: ShoppingCart, href: '/sales-dashboard', roles: ['admin', 'master'] },
 ];
 
