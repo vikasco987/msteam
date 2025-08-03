@@ -71,15 +71,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
+//recent
 
 
 
@@ -126,11 +118,13 @@ export async function GET(req: NextRequest) {
       dayMap[dateKey].totalLeads += 1;
     }
 
-    // Calculate cumulative revenue
+    // Sort newest → oldest
     const allDates = Object.entries(dayMap)
-      .sort(([a], [b]) => a.localeCompare(b)) // oldest first
+      .sort(([a], [b]) => b.localeCompare(a)) // ✅ recent first
       .map(([date, stats], index, arr) => {
-        const prevCumulative = index > 0 ? arr[index - 1][1].cumulativeRevenue ?? 0 : 0;
+        // Calculate cumulative revenue in reverse order
+        const prevCumulative =
+          index > 0 ? arr[index - 1][1].cumulativeRevenue ?? 0 : 0;
         const currentRevenue = stats.totalRevenue;
         const cumulativeRevenue = prevCumulative + currentRevenue;
 
@@ -150,6 +144,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: paginated, total });
   } catch (error) {
     console.error("Error in day-report:", error);
-    return NextResponse.json({ error: "Failed to generate day report" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate day report" },
+      { status: 500 }
+    );
   }
 }

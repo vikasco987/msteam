@@ -688,37 +688,20 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-// FILE: ./src/app/sales-dashboard/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { IndianRupee, TrendingUp, CheckCircle, ShoppingBag } from "lucide-react";
 
-// ... imports for charts and components
-import { Card } from "../components/ui/card";
 import RevenueByAssigneeChart from "../components/charts/RevenueByAssigneeChart";
 import MonthReportTable from "../components/tables/MonthReportTable";
 import WeekReportTable from "../components/tables/WeekReportTable";
 import DayReportTable from "../components/tables/DayReportTable";
-// import CumulativeRevenueChart from "../components/charts/CumulativeRevenueChart"; // REMOVED: Unused
 import GoalProgress from "../components/charts/GoalProgress";
 import AllReportsSection from "../components/tables/AllReportsSection";
-// import CumulativeDayChart from "../components/charts/CumulativeDayChart"; // REMOVED: Unused
-// import CumulativeMonthChart from "../components/charts/CumulativeMonthChart"; // REMOVED: Unused
 import CumulativeChartSwitcher from "../components/charts/CumulativeChartSwitcher";
 
 import {
@@ -730,7 +713,6 @@ import {
   Tooltip,
 } from "recharts";
 
-// Define interfaces for your data structures to avoid 'any'
 interface SalesStats {
   totalRevenue: number;
   amountReceived: number;
@@ -745,15 +727,10 @@ interface MonthlyChartData {
 
 interface AssigneeChartData {
   assignee: string;
-  revenue: number; // Assuming revenue is a number, adjust if it's a different type
+  revenue: number;
 }
 
-// Assuming DayReportTable, WeekReportTable, MonthReportTable, and AllReportsSection
-// expect an array of objects. You might have specific types for these in your project.
-// For now, I'll use a generic type or you can replace these with your actual types.
-// Example: interface DayReportEntry { date: string; sales: number; /* ... other fields */ }
-// For simplicity, let's assume they are arrays of objects with varying structures:
-type ReportEntry = Record<string, any>; // A generic object for table data
+type ReportEntry = Record<string, any>;
 
 const tabs = [
   { label: "All Reports", key: "all" },
@@ -765,9 +742,8 @@ const tabs = [
 
 export default function SalesDashboardPage() {
   const { user } = useUser();
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
 
-  // Use specific types instead of 'any'
   const [stats, setStats] = useState<SalesStats | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyChartData[]>([]);
   const [assigneeData, setAssigneeData] = useState<AssigneeChartData[]>([]);
@@ -779,15 +755,14 @@ export default function SalesDashboardPage() {
   const [showGoalProgress, setShowGoalProgress] = useState(false);
   const [cumulativeDayData, setCumulativeDayData] = useState<ReportEntry[]>([]);
 
-  // ✅ Redirect if user not admin or master
   useEffect(() => {
     if (user && !["admin", "master"].includes(user?.publicMetadata?.role as string)) {
       router.push("/unauthorized");
     }
-  }, [user, router]); // FIX: Added 'router' to dependency array
+  }, [user, router]);
 
   useEffect(() => {
-    fetch("/api/stats/user-performance/overview")
+    fetch("/api/stats/user-performance/overview") // ✅ Now returns current month only
       .then((res) => res.json())
       .then(setStats)
       .catch((err) => {
@@ -797,7 +772,7 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/monthly")
       .then((res) => res.json())
-      .then((data: Record<string, number>) => { // FIX: Type data for monthly
+      .then((data: Record<string, number>) => {
         const formatted = Object.entries(data).map(([month, revenue]) => ({
           month,
           revenue: typeof revenue === "number" ? revenue : 0,
@@ -811,10 +786,10 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/by-assignee")
       .then((res) => res.json())
-      .then((res: Record<string, number>) => { // FIX: Type res for by-assignee
+      .then((res: Record<string, number>) => {
         const formatted = Object.entries(res).map(([assignee, revenue]) => ({
           assignee,
-          revenue: typeof revenue === "number" ? revenue : 0, // Ensure revenue is number
+          revenue: typeof revenue === "number" ? revenue : 0,
         }));
         setAssigneeData(formatted);
       })
@@ -825,7 +800,7 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/day-report?page=1&limit=1000")
       .then((res) => res.json())
-      .then((json: { data: ReportEntry[] }) => { // FIX: Type json for day-report
+      .then((json: { data: ReportEntry[] }) => {
         setDayData(json.data || []);
         setCumulativeDayData(json.data || []);
       })
@@ -833,7 +808,7 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/week-report?page=1&limit=1000")
       .then((res) => res.json())
-      .then((data: { data: ReportEntry[] }) => { // FIX: Type data for week-report
+      .then((data: { data: ReportEntry[] }) => {
         setWeekData(data.data);
         setCumulativeData(data.data);
       })
@@ -841,11 +816,11 @@ export default function SalesDashboardPage() {
 
     fetch("/api/stats/user-performance/mom-table")
       .then((res) => res.json())
-      .then((res: { data: ReportEntry[] }) => { // FIX: Type res for mom-table
+      .then((res: { data: ReportEntry[] }) => {
         setMonthTableData(res.data || []);
       })
       .catch((err) => console.error("Failed to fetch month table:", err));
-  }, []); // router is not needed here as it's not directly used in the fetches
+  }, []);
 
   useEffect(() => {
     if (activeTab !== "charts") {
@@ -858,22 +833,64 @@ export default function SalesDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold flex items-center justify-between">
-        Sales Dashboard
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Sales Dashboard</h1>
         <Link
           href="/goals"
           className="text-sm font-medium text-blue-600 hover:underline border border-blue-600 rounded px-3 py-1 ml-4 transition-colors duration-200 hover:bg-blue-50"
         >
           Set Goals
         </Link>
-      </h1>
+      </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card title="Total Revenue" value={`₹${stats.totalRevenue ?? 0}`} />
-        <Card title="Received" value={`₹${stats.amountReceived ?? 0}`} />
-        <Card title="Pending" value={`₹${stats.pendingAmount ?? 0}`} />
-        <Card title="Sales" value={stats.totalSales ?? 0} />
+      {/* 📊 This Month Overview */}
+      <h2 className="text-lg font-semibold text-gray-700 mt-4">
+        📅 This Month Overview
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
+        {/* Total Revenue */}
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-5 rounded-xl shadow-lg text-white transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">Total Revenue</h3>
+            <IndianRupee className="h-5 w-5 opacity-80" />
+          </div>
+          <p className="mt-2 text-2xl font-bold">
+            ₹{stats.totalRevenue?.toLocaleString() ?? 0}
+          </p>
+        </div>
+
+        {/* Received */}
+        <div className="bg-gradient-to-r from-green-400 to-emerald-500 p-5 rounded-xl shadow-lg text-white transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">Received</h3>
+            <CheckCircle className="h-5 w-5 opacity-80" />
+          </div>
+          <p className="mt-2 text-2xl font-bold">
+            ₹{stats.amountReceived?.toLocaleString() ?? 0}
+          </p>
+        </div>
+
+        {/* Pending */}
+        <div className="bg-gradient-to-r from-red-400 to-rose-500 p-5 rounded-xl shadow-lg text-white transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">Pending</h3>
+            <TrendingUp className="h-5 w-5 opacity-80" />
+          </div>
+          <p className="mt-2 text-2xl font-bold">
+            ₹{stats.pendingAmount?.toLocaleString() ?? 0}
+          </p>
+        </div>
+
+        {/* Sales */}
+        <div className="bg-gradient-to-r from-yellow-400 to-amber-500 p-5 rounded-xl shadow-lg text-white transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">Sales</h3>
+            <ShoppingBag className="h-5 w-5 opacity-80" />
+          </div>
+          <p className="mt-2 text-2xl font-bold">
+            {stats.totalSales ?? 0}
+          </p>
+        </div>
       </div>
 
       {/* Tabs */}
