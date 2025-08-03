@@ -9032,7 +9032,7 @@ export default function Board() {
             👁️ Show My Tasks
           </button>
           {/* "Show All Tasks" button (available to all users) */}
-          <button
+          {/* <button
             onClick={handleShowAllTasks}
             className={`px-3 py-2 text-sm rounded-lg border ${
               showAllTasksMode
@@ -9041,7 +9041,7 @@ export default function Board() {
             } flex items-center gap-1`}
           >
             🌐 Show All Tasks
-          </button>
+          </button> */}
 
 
           <button
