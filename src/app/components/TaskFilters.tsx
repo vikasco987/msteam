@@ -44,7 +44,7 @@ const ALL_COLUMNS = [
   "location",
   "notes",
   "amount",
-  "amountReceived",
+  "received", // The correct field name for amount received
   "pendingAmount",
   "attachments",
   "paymentProofs",
@@ -88,11 +88,21 @@ export const TaskFilters = ({
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
 
+  // New state and ref for assigner filter
+  const [selectedAssigners, setSelectedAssigners] = useState<string[]>([]);
+  const [isAssignerDropdownOpen, setIsAssignerDropdownOpen] = useState(false);
+
+  // State for the new filters
+  const [nonZeroSalesOnly, setNonZeroSalesOnly] = useState(false);
+  const [pendingFilter, setPendingFilter] = useState<"all" | "pending" | "paid">("all");
+  
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const assigneeDropdownRef = useRef<HTMLDivElement>(null);
+  const assignerDropdownRef = useRef<HTMLDivElement>(null); // New ref for assigner dropdown
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -107,6 +117,13 @@ export const TaskFilters = ({
         !assigneeDropdownRef.current.contains(event.target as Node)
       ) {
         setIsAssigneeDropdownOpen(false);
+      }
+      // New logic for assigner dropdown
+      if (
+        assignerDropdownRef.current &&
+        !assignerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsAssignerDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -146,7 +163,14 @@ export const TaskFilters = ({
     if (statusFilter) {
       currentFilteredTasks = currentFilteredTasks.filter((t) => t.status === statusFilter);
     }
-
+    
+    // New filter for assigners
+    if (selectedAssigners.length > 0) {
+      currentFilteredTasks = currentFilteredTasks.filter((t) =>
+        selectedAssigners.includes(t.assignerName || t.createdByName || "")
+      );
+    }
+    
     if (selectedAssignees.length > 0) {
       currentFilteredTasks = currentFilteredTasks.filter((t) =>
         t.assignees?.some(
@@ -190,18 +214,41 @@ export const TaskFilters = ({
       });
     }
 
+    // Filter for non-zero sales only
+    if (nonZeroSalesOnly) {
+      currentFilteredTasks = currentFilteredTasks.filter((t) => (t.amount || 0) > 0);
+    }
+
+    // Corrected logic for pending payments filter
+    if (pendingFilter === "pending") {
+      currentFilteredTasks = currentFilteredTasks.filter((t) => {
+        // Corrected to use t.received
+        const pending = (Number(t.amount) || 0) - (Number(t.received) || 0);
+        // Only include if there's a pending amount
+        return pending > 0;
+      });
+    } else if (pendingFilter === "paid") {
+      currentFilteredTasks = currentFilteredTasks.filter((t) => {
+        // Corrected to use t.received
+        const pending = (Number(t.amount) || 0) - (Number(t.received) || 0);
+        // Fully paid means: sale exists (amount > 0) AND no pending amount
+        return pending === 0 && (Number(t.amount) || 0) > 0;
+      });
+    }
+
     if (sortConfig) {
       currentFilteredTasks.sort((a, b) => {
         let aValue: any;
         let bValue: any;
 
         if (sortConfig.key === "pendingAmount") {
+          // Corrected to use t.received
           aValue = (Number(a.amount) || 0) - (Number(a.received) || 0);
           bValue = (Number(b.amount) || 0) - (Number(b.received) || 0);
         } else if (sortConfig.key === "amount") {
           aValue = Number(a.amount) || 0;
           bValue = Number(b.amount) || 0;
-        } else if (sortConfig.key === "amountReceived") {
+        } else if (sortConfig.key === "received") {
           aValue = Number(a.received) || 0;
           bValue = Number(b.received) || 0;
         } else if (sortConfig.key === "createdAt") {
@@ -231,10 +278,13 @@ export const TaskFilters = ({
     query,
     sortConfig,
     statusFilter,
+    selectedAssigners, // New dependency
     selectedAssignees,
     selectedCategories, // Now correctly compares against `task.title` after emoji stripping
     dateFilter,
     notesMap,
+    nonZeroSalesOnly,
+    pendingFilter,
   ]);
 
   useEffect(() => {
@@ -306,6 +356,17 @@ export const TaskFilters = ({
     return Array.from(names);
   }, [initialTasks]);
 
+  // New memoized list of unique assigners
+  const uniqueAssignerNames = useMemo(() => {
+    const names = new Set<string>();
+    initialTasks.forEach(task => {
+      if (task.assignerName) names.add(task.assignerName);
+      else if (task.createdByName) names.add(task.createdByName);
+    });
+    return Array.from(names);
+  }, [initialTasks]);
+
+
   const getCategoryDropdownDisplayText = () => {
     if (selectedCategories.length === 0) {
       return "All Categories";
@@ -331,6 +392,19 @@ export const TaskFilters = ({
     }
   };
 
+  // New function for assigner dropdown display text
+  const getAssignerDropdownDisplayText = () => {
+    if (selectedAssigners.length === 0) {
+      return "All Assigners";
+    } else if (selectedAssigners.length === uniqueAssignerNames.length) {
+      return "All Assigners Selected";
+    } else if (selectedAssigners.length === 1) {
+      return selectedAssigners[0];
+    } else {
+      return `${selectedAssigners.length} Assigners Selected`;
+    }
+  };
+
 
   return (
     <>
@@ -347,6 +421,27 @@ export const TaskFilters = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {/* Non-zero Sales Filter */}
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              className="accent-blue-600"
+              checked={nonZeroSalesOnly}
+              onChange={(e) => setNonZeroSalesOnly(e.target.checked)}
+            />
+            Non-zero Sales Only
+          </label>
+
+          {/* Pending Filter */}
+          <select
+            value={pendingFilter}
+            onChange={(e) => setPendingFilter(e.target.value as "all" | "pending" | "paid")}
+            className="p-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">All Payments</option>
+            <option value="pending">Pending Payments</option>
+            <option value="paid">Fully Paid</option>
+          </select>
           <button
             className="inline-flex items-center bg-green-600 text-white font-medium px-4 py-2 rounded-lg shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 ease-in-out"
             onClick={exportCSV}
@@ -387,6 +482,44 @@ export const TaskFilters = ({
             <option key={status} value={status}>{status}</option>
           ))}
         </select>
+
+        {/* Custom Assigner Filter Dropdown with Checkboxes */}
+        <div className="relative" ref={assignerDropdownRef}>
+          <button
+            type="button"
+            className="p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between min-w-[150px]"
+            onClick={() => setIsAssignerDropdownOpen(prev => !prev)}
+          >
+            <span>{getAssignerDropdownDisplayText()}</span>
+            {isAssignerDropdownOpen ? <FaCaretUp className="ml-2" /> : <FaCaretDown className="ml-2" />}
+          </button>
+          {isAssignerDropdownOpen && (
+            <div className="absolute z-20 mt-1 w-56 max-h-60 overflow-y-auto rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <div className="py-1">
+                {uniqueAssignerNames.map((assigner) => (
+                  <label
+                    key={assigner}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      className="accent-blue-600"
+                      checked={selectedAssigners.includes(assigner)}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        setSelectedAssigners(prev =>
+                          isChecked ? [...prev, assigner] : prev.filter(v => v !== assigner)
+                        );
+                      }}
+                    />
+                    {assigner}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
 
         {/* Custom Assignee Filter Dropdown with Checkboxes */}
         <div className="relative" ref={assigneeDropdownRef}>

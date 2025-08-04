@@ -4652,8 +4652,8 @@ import { Task } from "../../types/task";
 import { Note } from "../../../types/note";
 // import { columns } from "./columns"; // your other columns if needed - if you use this, ensure it's compatible
 import HighlightColorDropdown from "../components/HighlightColorDropdown"; // Corrected import based on your instructions
-
-import { TaskFilters } from "./TaskFilters"; // Import the new TaskFilters component
+import { TaskFilters } from "./TaskFilters"; 
+// Import the new TaskFilters component
 
 import { useUser, UserResource } from "@clerk/nextjs";
 
@@ -5279,6 +5279,18 @@ export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
                         </button>
                       </td>
                     )}
+
+
+
+
+
+
+
+
+
+
+
+                    
                     {visibleColumns.includes("amount") && (
                       <td className="border border-gray-200 px-3 py-2 whitespace-nowrap text-right">
                         {editMode ? (
