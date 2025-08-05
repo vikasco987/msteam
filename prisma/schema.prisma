@@ -26,8 +26,8 @@ model Task {
   assigneeIds     String[] @default([])
 
   createdByClerkId String
-   createdByName    String?      // 👈 Add this
-  createdByEmail   String?      // 👈 Add this
+   createdByName    String? 
+  createdByEmail   String?     
 
   attachments     String[] @default([])
   paymentProofs   String[] @default([])
@@ -105,4 +105,16 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+
+
+model Attendance {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String
+  checkIn      DateTime
+  checkOut     DateTime?
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
