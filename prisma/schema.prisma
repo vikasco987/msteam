@@ -108,10 +108,11 @@ model User {
 }
 
 
-
 model Attendance {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   userId       String
+  faceImage    String   // base64 or URL
+  location     Json
   checkIn      DateTime
   checkOut     DateTime?
   date         DateTime @default(now())
