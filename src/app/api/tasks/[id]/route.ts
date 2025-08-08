@@ -654,6 +654,215 @@
 
 
 
+// // src/app/api/tasks/[id]/route.ts
+
+// import { NextRequest, NextResponse } from "next/server";
+// import { prisma } from "../../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { clerkClient } from "@clerk/clerk-sdk-node";
+// import { Prisma } from "@prisma/client";
+
+// export const dynamic = "force-dynamic";
+
+// interface PatchRequestBody {
+//   title?: string;
+//   status?: string;
+//   amount?: number | string | null;
+//   received?: number | string | null;
+//   description?: string;
+//   highlightColor?: string | null;
+//   customFields?: { [key: string]: any };
+//   assignerEmail?: string | null;
+//   assigneeEmail?: string | null;
+//   assignerName?: string | null;
+//   assigneeName?: string | null;
+//   assigneeId?: string | null;
+//   assigneeIds?: string[] | string | null; // can be string or array from frontend
+// }
+
+// // --- GET Task ---
+// export async function GET(req: NextRequest, context: { params: { id: string } }) {
+//   const { id: taskId } = context.params;
+//   const { userId } = await getAuth(req);
+
+//   if (!taskId || !userId) {
+//     return NextResponse.json({ error: "Unauthorized or missing task ID" }, { status: 400 });
+//   }
+
+//   try {
+//     const task = await prisma.task.findUnique({
+//       where: { id: taskId },
+//       include: { subtasks: true },
+//     });
+
+//     if (!task) {
+//       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+//     }
+
+//     return NextResponse.json(task, { status: 200 });
+//   } catch (err) {
+//     console.error("❌ Get task failed:", err);
+//     return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+//   }
+// }
+
+// // --- PATCH Task ---
+// export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+//   const { id: taskId } = context.params;
+//   const { userId, sessionClaims } = await getAuth(req);
+
+//   if (!taskId) {
+//     return NextResponse.json({ error: "Missing task ID" }, { status: 400 });
+//   }
+//   if (!userId) {
+//     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//   }
+
+//   try {
+//     const body: PatchRequestBody = await req.json();
+//     const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
+
+//     const allowedFields = [
+//       "title",
+//       "status",
+//       "amount",
+//       "received",
+//       "description",
+//       "highlightColor",
+//       "assignerEmail",
+//       "assigneeEmail",
+//       "assignerName",
+//       "assigneeName",
+//       "assigneeId",
+//       "assigneeIds",
+//     ];
+
+//     for (const field of allowedFields) {
+//       if (Object.prototype.hasOwnProperty.call(body, field)) {
+//         const value = body[field as keyof PatchRequestBody];
+
+//         if (field === "amount" || field === "received") {
+//           if (typeof value === "number") {
+//             updateData[field] = value;
+//           } else if (typeof value === "string" && !isNaN(parseFloat(value))) {
+//             updateData[field] = parseFloat(value);
+//           } else if (value === null) {
+//             updateData[field] = null;
+//           }
+//         } else if (field === "assigneeIds") {
+//           if (Array.isArray(value)) {
+//             updateData.assigneeIds = value.map(String);
+//           } else if (typeof value === "string") {
+//             updateData.assigneeIds = [value]; // ensure array
+//           } else if (value == null) {
+//             updateData.assigneeIds = [];
+//           }
+//         } else {
+//           updateData[field as Exclude<keyof PatchRequestBody, "amount" | "received" | "customFields" | "assigneeIds">] = value as any;
+//         }
+//       }
+//     }
+
+//     // Handle customFields merging
+//     if (body.customFields !== undefined) {
+//       const currentTask = await prisma.task.findUnique({
+//         where: { id: taskId },
+//         select: { customFields: true },
+//       });
+
+//       const existingCustomFields: Prisma.JsonValue = currentTask?.customFields || {};
+
+//       if (typeof existingCustomFields === "object" && existingCustomFields !== null &&
+//           typeof body.customFields === "object" && body.customFields !== null) {
+//         updateData.customFields = {
+//           ...(existingCustomFields as Prisma.JsonObject),
+//           ...(body.customFields as Prisma.JsonObject),
+//         };
+//       } else {
+//         updateData.customFields = body.customFields as Prisma.JsonObject;
+//       }
+//     }
+
+//     // Ensure user exists in DB
+//     let dbUser = await prisma.user.findUnique({ where: { clerkId: userId } });
+
+//     if (!dbUser) {
+//       console.log(`[${new Date().toISOString()}] Auto-creating user in DB for ${userId}...`);
+//       try {
+//         const clerkUser = await clerkClient.users.getUser(userId);
+//         const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress;
+//         if (!userEmail) {
+//           return NextResponse.json({ error: "Unauthorized: No email found" }, { status: 401 });
+//         }
+//         const defaultRole = (sessionClaims?.role as string) || "SELLER";
+//         dbUser = await prisma.user.create({
+//           data: {
+//             clerkId: userId,
+//             email: userEmail,
+//             role: defaultRole,
+//           },
+//         });
+//         console.log(`✅ User ${userId} created in DB`);
+//       } catch (clerkError) {
+//         console.error("❌ Clerk user fetch/create failed:", clerkError);
+//         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//       }
+//     }
+
+//     // Run update
+//     const updated = await prisma.task.update({
+//       where: { id: taskId },
+//       data: updateData,
+//     });
+
+//     return NextResponse.json({ success: true, task: updated }, { status: 200 });
+//   } catch (err) {
+//     console.error("❌ Update failed:", err);
+//     return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
+//   }
+// }
+
+// // --- DELETE Task ---
+// export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
+//   const { id: taskId } = context.params;
+//   const { userId } = await getAuth(req);
+
+//   if (!taskId || !userId) {
+//     return NextResponse.json({ error: "Unauthorized or missing task ID" }, { status: 400 });
+//   }
+
+//   try {
+//     await prisma.subtask.deleteMany({ where: { taskId } });
+//     await prisma.note.deleteMany({ where: { taskId } });
+//     await prisma.task.delete({ where: { id: taskId } });
+
+//     return NextResponse.json({ success: true }, { status: 200 });
+//   } catch (err) {
+//     console.error("❌ Delete failed:", err);
+//     return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // src/app/api/tasks/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";

@@ -10,6 +10,7 @@ datasource db {
 model Task {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   title           String
+  parentTaskId    String?  
   status          String
   tags            String[] @default([])
   highlightColor  String?
@@ -26,8 +27,8 @@ model Task {
   assigneeIds     String[] @default([])
 
   createdByClerkId String
-   createdByName    String? 
-  createdByEmail   String?     
+   createdByName    String?      // 👈 Add this
+  createdByEmail   String?      // 👈 Add this
 
   attachments     String[] @default([])
   paymentProofs   String[] @default([])
@@ -105,8 +106,7 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
+}    
 
 model Attendance {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -119,3 +119,4 @@ model Attendance {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+ 
