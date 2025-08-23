@@ -1418,7 +1418,7 @@ const allNavItems = [
   { label: 'Timeline', icon: LineChart, href: '/timeline', roles: ['admin', 'master', 'seller', 'temp'] },
 //  { label: 'Leads', icon: FileSpreadsheet, href: '/leads', roles: ['admin', 'master', 'seller', 'user'] },
   { label: 'Sales Dashboard', icon: ShoppingCart, href: '/sales-dashboard', roles: ['admin', 'master'] },
-  { label: 'Seller Dashboard', icon: ShoppingCart, href: '/seller/dashboard', roles: ['seller', 'admin'] },
+  { label: 'Seller Dashboard', icon: ShoppingCart, href: '/seller/dashboard', roles: ['seller'] },
 
   // ✅ NEW: Attendance Admin Link
 //   { label: 'Attendance', icon: CalendarCheck, href: '/admin/attendance', roles: ['admin', 'master'] },
