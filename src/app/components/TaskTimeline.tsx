@@ -8745,6 +8745,29 @@ export default function TaskTimeline() {
         },
       });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       if (!res.ok) {
         console.error(`Frontend: Failed to fetch single task: ${res.status} - ${res.statusText}`);
         const errorData = await res.json();
@@ -9102,6 +9125,27 @@ export default function TaskTimeline() {
     setCurrentPage(pageNumber);
   };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
   const pageNumbers = useMemo(() => {
     const pages = [];
     const maxPagesToShow = 5;
