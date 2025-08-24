@@ -6790,71 +6790,167 @@ export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
     setEditedValues((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleBlur = async (taskId: string, field: "amount" | "received") => {
-    const key = `${taskId}-${field}`;
-    const value = editedValues[key];
 
-    const originalTask = localTasks.find((t) => t.id === taskId);
-    const originalValue =
-      field === "amount"
-        ? Number(originalTask?.amount) || 0
-        : Number(originalTask?.received) || 0;
 
-    if (typeof value === "number" && !isNaN(value) && value !== originalValue) {
-      setIsSaving(key);
-      try {
-        const res = await fetch("/api/tasks/update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ taskId, field, value }),
-        });
 
-        if (!res.ok) {
-          const contentType = res.headers.get("content-type");
-          const errorText = await res.text();
 
-          let errorMessage = "Failed to update task.";
-          if (contentType && contentType.includes("application/json")) {
-            try {
-              const errorJson = JSON.parse(errorText);
-              errorMessage = errorJson.error || errorMessage;
-            } catch (jsonErr) {
-              console.error("Failed to parse error JSON:", jsonErr, errorText);
-              errorMessage = "Server returned malformed error. Contact support.";
-            }
-          } else {
-            errorMessage = `Server error: ${res.status} ${res.statusText}. Please try again.`;
-            console.error("Server returned non-JSON error:", errorText);
-          }
 
-          toast.error(errorMessage);
-          setEditedValues((prev) => ({ ...prev, [key]: originalValue }));
-        } else {
-          toast.success("Task updated successfully!");
-          await refetchTasks();
-          setEditedValues((prev) => {
-            const newState = { ...prev };
-            delete newState[key];
-            return newState;
-          });
-        }
-      } catch (err: unknown) {
-        console.error("❌ Network or unexpected error:", err);
-        toast.error(
-          err.message || "An unexpected error occurred while updating the task."
-        );
-        setEditedValues((prev) => ({ ...prev, [key]: originalValue }));
-      } finally {
-        setIsSaving(null);
-      }
-    } else {
-      setEditedValues((prev) => {
-        const newState = { ...prev };
-        delete newState[key];
-        return newState;
+  // const handleBlur = async (taskId: string, field: "amount" | "received") => {
+  //   const key = `${taskId}-${field}`;
+  //   const value = editedValues[key];
+
+  //   const originalTask = localTasks.find((t) => t.id === taskId);
+  //   const originalValue =
+  //     field === "amount"
+  //       ? Number(originalTask?.amount) || 0
+  //       : Number(originalTask?.received) || 0;
+
+  //   if (typeof value === "number" && !isNaN(value) && value !== originalValue) {
+  //     setIsSaving(key);
+  //     try {
+  //       const res = await fetch("/api/tasks/update", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ taskId, field, value }),
+  //       });
+
+  //       if (!res.ok) {
+  //         const contentType = res.headers.get("content-type");
+  //         const errorText = await res.text();
+
+  //         let errorMessage = "Failed to update task.";
+  //         if (contentType && contentType.includes("application/json")) {
+  //           try {
+  //             const errorJson = JSON.parse(errorText);
+  //             errorMessage = errorJson.error || errorMessage;
+  //           } catch (jsonErr) {
+  //             console.error("Failed to parse error JSON:", jsonErr, errorText);
+  //             errorMessage = "Server returned malformed error. Contact support.";
+  //           }
+  //         } else {
+  //           errorMessage = `Server error: ${res.status} ${res.statusText}. Please try again.`;
+  //           console.error("Server returned non-JSON error:", errorText);
+  //         }
+
+  //         toast.error(errorMessage);
+  //         setEditedValues((prev) => ({ ...prev, [key]: originalValue }));
+  //       } else {
+  //         toast.success("Task updated successfully!");
+  //         await refetchTasks();
+  //         setEditedValues((prev) => {
+  //           const newState = { ...prev };
+  //           delete newState[key];
+  //           return newState;
+  //         });
+  //       }
+  //     } catch (err: unknown) {
+  //       console.error("❌ Network or unexpected error:", err);
+  //       toast.error(
+  //         err.message || "An unexpected error occurred while updating the task."
+  //       );
+  //       setEditedValues((prev) => ({ ...prev, [key]: originalValue }));
+  //     } finally {
+  //       setIsSaving(null);
+  //     }
+  //   } else {
+  //     setEditedValues((prev) => {
+  //       const newState = { ...prev };
+  //       delete newState[key];
+  //       return newState;
+  //     });
+  //   }
+  // };
+
+
+
+
+
+
+  const handleBlur = async (
+  taskId: string,
+  field: "amount" | "received"
+) => {
+  // Only allow admin to update amount or received
+  if ((field === "amount" || field === "received") && role !== "admin") {
+    toast.error("Only admins can edit this field.");
+    // Remove edited value since it’s not allowed
+    setEditedValues((prev) => {
+      const newState = { ...prev };
+      delete newState[`${taskId}-${field}`];
+      return newState;
+    });
+    return;
+  }
+
+  const key = `${taskId}-${field}`;
+  const value = editedValues[key];
+
+  const originalTask = localTasks.find((t) => t.id === taskId);
+  const originalValue =
+    field === "amount"
+      ? Number(originalTask?.amount) || 0
+      : Number(originalTask?.received) || 0;
+
+  if (typeof value === "number" && !isNaN(value) && value !== originalValue) {
+    setIsSaving(key);
+    try {
+      const res = await fetch("/api/tasks/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, field, value }),
       });
+
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type");
+        const errorText = await res.text();
+
+        let errorMessage = "Failed to update task.";
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error || errorMessage;
+          } catch (jsonErr) {
+            console.error("Failed to parse error JSON:", jsonErr, errorText);
+            errorMessage = "Server returned malformed error. Contact support.";
+          }
+        } else {
+          errorMessage = `Server error: ${res.status} ${res.statusText}. Please try again.`;
+          console.error("Server returned non-JSON error:", errorText);
+        }
+
+        toast.error(errorMessage);
+        setEditedValues((prev) => ({ ...prev, [key]: originalValue }));
+      } else {
+        toast.success("Task updated successfully!");
+        await refetchTasks();
+        setEditedValues((prev) => {
+          const newState = { ...prev };
+          delete newState[key];
+          return newState;
+        });
+      }
+    } catch (err: any) {
+      console.error("❌ Network or unexpected error:", err);
+      toast.error(
+        err.message || "An unexpected error occurred while updating the task."
+      );
+      setEditedValues((prev) => ({ ...prev, [key]: originalValue }));
+    } finally {
+      setIsSaving(null);
     }
-  };
+  } else {
+    setEditedValues((prev) => {
+      const newState = { ...prev };
+      delete newState[key];
+      return newState;
+    });
+  }
+};
+
+
+
+
+
 
   const formatCurrency = (amount: number | string | undefined): string => {
     if (typeof amount === "string") {

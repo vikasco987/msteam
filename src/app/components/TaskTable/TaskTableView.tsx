@@ -28,7 +28,8 @@
 // export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
 //   const [editMode, setEditMode] = useState(false);
 //   const [editedValues, setEditedValues] = useState<{ [key: string]: number }>({});
-//   const [localTasks, setLocalTasks] = useState<Task[]>(tasks || []);
+//   const [localTasks, setLo
+// calTasks] = useState<Task[]>(tasks || []);
 //   const [isSaving, setIsSaving] = useState<string | null>(null);
 
 //   const [query, setQuery] = useState("");
@@ -651,6 +652,17 @@ export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
       });
     }
 
+
+
+
+
+
+
+
+
+
+
+
     return filteredTasks;
   }, [localTasks, query, sortConfig, statusFilter, assigneeFilter, dateFilter, notesMap, sourceFilter]);
 
@@ -794,7 +806,7 @@ export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
         setDateFilter={setDateFilter}
         tasksPerPage={tasksPerPage}
         handleTasksPerPageChange={handleTasksPerPageChange}
-        editMode={editMode}
+        editMode={editMode && (role === "admin" || role === "master")}
         setEditMode={setEditMode}
         exportCSV={exportCSV}
         localTasks={localTasks}
@@ -833,6 +845,27 @@ export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
             getSortIcon={getSortIcon}
           />
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           {/* Table Body */}
           {paginatedTasks.length === 0 ? (
             <tbody className="bg-white">
@@ -862,18 +895,32 @@ export default function TaskTableView({ tasks, user, onTasksUpdate }: Props) {
               </tr>
             </tbody>
           ) : (
+            // <TaskTableBody
+            //   tasks={paginatedTasks}
+            //   columns={columns}
+            //   editMode={editMode}
+            //   editedValues={editedValues}
+            //   handleInputChange={handleInputChange}
+            //   handleBlur={handleBlur}
+            //   isSaving={isSaving}
+            //   selectedTaskIdForNotes={selectedTaskIdForNotes}
+            //   setIsNoteModalOpen={setIsNoteModalOpen}
+            //   notesMap={notesMap}
+            // />
             <TaskTableBody
-              tasks={paginatedTasks}
-              columns={columns}
-              editMode={editMode}
-              editedValues={editedValues}
-              handleInputChange={handleInputChange}
-              handleBlur={handleBlur}
-              isSaving={isSaving}
-              selectedTaskIdForNotes={selectedTaskIdForNotes}
-              setIsNoteModalOpen={setIsNoteModalOpen}
-              notesMap={notesMap}
-            />
+  tasks={paginatedTasks}
+  columns={columns}
+  editMode={editMode && (role === "admin" || role === "master")} // Only admins can edit
+  editedValues={editedValues}
+  handleInputChange={handleInputChange}
+  handleBlur={handleBlur}
+  isSaving={isSaving  && (role === "admin" || role === "master")}
+  selectedTaskIdForNotes={selectedTaskIdForNotes}
+  setIsNoteModalOpen={setIsNoteModalOpen}
+  notesMap={notesMap}
+  currentUserRole={role} // Pass role to body for any role-specific rendering
+/>
+
           )}
         </table>
       </div>
