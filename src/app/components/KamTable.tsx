@@ -5,6 +5,10 @@ import { format, differenceInDays, isToday, subDays, startOfMonth } from "date-f
 import { useUser } from "@clerk/nextjs";
 import toast, { Toaster } from "react-hot-toast";
 import * as XLSX from "xlsx";
+import { FileText } from "lucide-react"; // Note icon
+import NotesModal from "../components/NotesModal";
+import { FaStickyNote } from "react-icons/fa";
+
 import { saveAs } from "file-saver";
 
 import {
@@ -50,6 +54,7 @@ interface Task {
   customFields?: Record<string, string | number>;
   highlightColor?: string;
   status?: "todo" | "inprogress" | "done" | "Archived";
+  notes?: string;
 }
 
 function stripEmojis(str: string): string {
@@ -72,6 +77,8 @@ export default function KamTableView() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
   const [editedValues, setEditedValues] = useState<{
     [key: string]: number;
   }>({});
@@ -642,6 +649,10 @@ export default function KamTableView() {
     );
   }
 
+  // Save note handler
+
+
+
   const userEmail = user?.primaryEmailAddress?.emailAddress;
   const userRole = user?.publicMetadata?.role as string | undefined;
 
@@ -971,12 +982,23 @@ export default function KamTableView() {
                   {getSortIcon("pendingAmount")}
                 </div>
               </th>
+
+               <th
+  className="px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wider text-center border-b border-gray-200 border-r"
+>
+  <div className="flex items-center justify-center whitespace-nowrap">
+    <FaStickyNote className="mr-2 text-gray-500" /> Notes
+  </div>
+</th>
+
               <th
                 className="px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wider text-center border-b border-gray-200
                                 sticky top-0 bg-gray-100 z-20 rounded-tr-2xl"
               >
                 Highlight
               </th>
+             
+
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -1168,6 +1190,17 @@ export default function KamTableView() {
                       {formatCurrency(pending)}
                     </span>
                   </td>
+
+
+                  <td className="px-4 py-3 whitespace-nowrap text-center border-r border-b">
+  <button
+    onClick={() => setSelectedTask(t)}
+    className="p-2 rounded-full hover:bg-gray-100 transition"
+  >
+    <FaStickyNote className="text-indigo-600" />
+  </button>
+</td>
+
                   <td className="px-4 py-3 text-center border-b">
                     <HighlightColorPicker
                       taskId={t.id}
@@ -1213,7 +1246,26 @@ export default function KamTableView() {
           </tbody>
         </table>
       </div>
+      
+{/* Notes Modal */}
+{selectedTask && (
+  <NotesModal
+    taskId={selectedTask.id}               // ✅ pass taskId only
+    initialNotes={selectedTask.notes || []} // ✅ optional if you preload notes
+    onClose={(updatedNotes) => {
+      if (updatedNotes) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === selectedTask.id ? { ...t, notes: updatedNotes } : t
+          )
+        );
+      }
+      setSelectedTask(null);
+    }}
+  />
+)}
 
+      
       <div className="mt-2 pt-6 pb-6 flex justify-end bg-gradient-to-r from-gray-50 to-gray-100 rounded-b-3xl shadow-lg">
         <PaginationControls
           limit={limit}
