@@ -256,12 +256,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   try {
     const formData = await req.formData();
-    const amountStr = formData.get("amount") as string | null;
-    const receivedStr = formData.get("received") as string | null;
+    // const amountStr = formData.get("amount") as string | null;
+    // const receivedStr = formData.get("received") as string | null;
     const file = formData.get("file") as File | null;
 
-    const newAmount = amountStr !== null ? parseFloat(amountStr) : undefined;
-const newReceived = receivedStr !== null ? parseFloat(receivedStr) : undefined;
+//     const newAmount = amountStr !== null ? parseFloat(amountStr) : undefined;
+// const newReceived = receivedStr !== null ? parseFloat(receivedStr) : undefined;
+// Parse helper: treat blank/whitespace as "not provided"
+const readNumberFromForm = (v: FormDataEntryValue | null | undefined) => {
+  if (v == null) return undefined;
+  const s = String(v).trim();
+  if (s === "") return undefined;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+const newAmount = readNumberFromForm(formData.get("amount"));
+const newReceived = readNumberFromForm(formData.get("received"));
+
 
 
     const existingTask = await prisma.task.findUnique({
@@ -368,24 +380,100 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     if (!existingTask) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
-    const currentAmount = existingTask.amount || 0;
-    const currentReceived = existingTask.received || 0;
+    // const currentAmount = existingTask.amount ?? 0;
+    // const currentReceived = existingTask.received ?? null;
 
-    const updatedAmountToSave = newAmount !== undefined ? newAmount : currentAmount;
-    let updatedReceivedToSave = newReceived !== undefined ? newReceived : currentReceived;
-    if (updatedReceivedToSave > updatedAmountToSave) updatedReceivedToSave = updatedAmountToSave;
 
-    const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
-    if (newAmount !== undefined) updateData.amount = newAmount;
-    if (newReceived !== undefined) updateData.received = newReceived;
 
-    const paymentEntry: PaymentHistoryEntry = {
-      amount: updatedAmountToSave,
-      received: updatedReceivedToSave,
-      fileUrl: null,
-      updatedAt: new Date(),
-      updatedBy: userName || userEmail,
-    };
+    // const updatedAmountToSave = newAmount !== undefined ? newAmount : currentAmount;
+    // let updatedReceivedToSave = newReceived !== undefined ? newReceived : currentReceived;
+    // if (updatedReceivedToSave > updatedAmountToSave) updatedReceivedToSave = updatedAmountToSave;
+
+    // const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
+    // if (newAmount !== undefined) updateData.amount = newAmount;
+    // if (newReceived !== undefined) updateData.received = newReceived;
+//     const updatedAmountToSave = newAmount !== undefined ? newAmount : currentAmount;
+// let updatedReceivedToSave = currentReceived;
+
+// // 🔒 Rule: Received cannot decrease or reset
+// if (newReceived !== undefined) {
+//   if (newReceived < currentReceived) {
+//     return NextResponse.json(
+//       { error: "Received cannot be decreased or deleted once set." },
+//       { status: 400 }
+//     );
+//   }
+//   if (newReceived > updatedAmountToSave) {
+//     return NextResponse.json(
+//       { error: "Received cannot exceed amount." },
+//       { status: 400 }
+//     );
+//   }
+//   updatedReceivedToSave = newReceived;
+// }
+
+// const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
+// if (newAmount !== undefined) updateData.amount = updatedAmountToSave;
+// if (updatedReceivedToSave !== currentReceived) updateData.received = updatedReceivedToSave;
+const currentAmount = existingTask.amount ?? 0;
+
+// Keep both raw (can be null) and numeric (for comparisons)
+const currentReceivedRaw: number | null = existingTask.received;
+const currentReceivedNum = currentReceivedRaw ?? 0;
+
+const updatedAmountToSave = newAmount !== undefined ? newAmount : currentAmount;
+let updatedReceivedToSave = currentReceivedNum; // always a number
+
+// 🔒 Received rules: only act if caller explicitly sent it
+if (newReceived !== undefined) {
+  // Block decrease if we already had a value
+  if (currentReceivedRaw !== null && newReceived < currentReceivedNum) {
+    return NextResponse.json(
+      { error: "Received cannot be decreased or deleted once set." },
+      { status: 400 }
+    );
+  }
+  // Prevent exceeding amount (use possibly-updated amount)
+  if (newReceived > updatedAmountToSave) {
+    return NextResponse.json(
+      { error: "Received cannot exceed amount." },
+      { status: 400 }
+    );
+  }
+  // Optional: block negatives
+  if (newReceived < 0) {
+    return NextResponse.json(
+      { error: "Received cannot be negative." },
+      { status: 400 }
+    );
+  }
+  updatedReceivedToSave = newReceived;
+}
+
+const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
+
+// Only write fields that were explicitly changed
+if (newAmount !== undefined) {
+  updateData.amount = updatedAmountToSave;
+}
+if (newReceived !== undefined && updatedReceivedToSave !== currentReceivedNum) {
+  updateData.received = updatedReceivedToSave;
+}
+
+
+
+   
+    const receivedForHistory =
+  newReceived !== undefined ? updatedReceivedToSave : currentReceivedNum;
+
+const paymentEntry: PaymentHistoryEntry = {
+  amount: updatedAmountToSave,
+  received: receivedForHistory,
+  fileUrl: null,
+  updatedAt: new Date(),
+  updatedBy: userName || userEmail,
+};
+
 
     const existingHistory = Array.isArray(existingTask.paymentHistory)
       ? (existingTask.paymentHistory as PaymentHistoryEntry[])
