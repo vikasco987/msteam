@@ -196,6 +196,11 @@
 
 
 
+
+
+
+
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../../lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
@@ -251,12 +256,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   try {
     const formData = await req.formData();
-    const amountStr = formData.get("amount") as string;
-    const receivedStr = formData.get("received") as string;
-    const file = formData.get("file") as File;
+    const amountStr = formData.get("amount") as string | null;
+    const receivedStr = formData.get("received") as string | null;
+    const file = formData.get("file") as File | null;
 
-    const newAmount = amountStr ? parseFloat(amountStr) : undefined;
-    const newReceived = receivedStr ? parseFloat(receivedStr) : undefined;
+    const newAmount = amountStr !== null ? parseFloat(amountStr) : undefined;
+const newReceived = receivedStr !== null ? parseFloat(receivedStr) : undefined;
+
 
     const existingTask = await prisma.task.findUnique({
       where: { id: originalTaskId },
@@ -264,30 +270,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
     if (!existingTask) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
-    // ✅ lock amount if already set
-    if (existingTask.amount !== null && newAmount !== undefined) {
-      return NextResponse.json({ error: "Amount is locked and cannot be updated." }, { status: 400 });
-    }
-
-    // ✅ lock received if already set
-    // if (existingTask.received !== null && newReceived !== undefined) {
-    //   return NextResponse.json({ error: "Initial received is locked. Use PATCH to add remaining received." }, { status: 400 });
-    // }
-    // ✅ allow cumulative received updates
-let updatedReceived = existingTask.received ?? 0;
-if (newReceived !== undefined) {
-  if (existingTask.amount === null) {
-    return NextResponse.json({ error: "Enter amount first before adding received." }, { status: 400 });
-  }
-
-  updatedReceived += newReceived;
-
-  if (updatedReceived > existingTask.amount) {
-    return NextResponse.json({ error: "Received cannot exceed total amount." }, { status: 400 });
-  }
-}
-
-
+    // ✅ Upload proof file if provided
     let uploadedFileUrl: string | undefined;
     if (file && file.size > 0) {
       const arrayBuffer = await file.arrayBuffer();
@@ -307,11 +290,31 @@ if (newReceived !== undefined) {
       uploadedFileUrl = uploadRes.secure_url;
     }
 
+    // ✅ Start with existing values
+    let updatedAmountToSave = existingTask.amount;
+    let updatedReceivedToSave = existingTask.received ?? 0;
+
+    // Rule: amount is locked after first set
+    if (newAmount !== undefined && existingTask.amount === null) {
+      updatedAmountToSave = newAmount;
+    }
+
+    // Rule: received is cumulative
+    if (newReceived !== undefined) {
+      if (updatedAmountToSave === null) {
+        return NextResponse.json({ error: "Set amount before adding received." }, { status: 400 });
+      }
+      updatedReceivedToSave += newReceived;
+      if (updatedReceivedToSave > updatedAmountToSave) {
+        return NextResponse.json({ error: "Received cannot exceed amount." }, { status: 400 });
+      }
+    }
+
     const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
-    if (newAmount !== undefined) updateData.amount = newAmount;
-    if (newReceived !== undefined) updateData.received = updatedReceived;
+    if (updatedAmountToSave !== existingTask.amount) updateData.amount = updatedAmountToSave;
+    if (updatedReceivedToSave !== existingTask.received) updateData.received = updatedReceivedToSave;
 
-
+    // ✅ Append proof only if provided
     if (uploadedFileUrl) {
       const currentProofs = Array.isArray(existingTask.paymentProofs)
         ? (existingTask.paymentProofs as string[])
@@ -319,20 +322,19 @@ if (newReceived !== undefined) {
       updateData.paymentProofs = [...currentProofs, uploadedFileUrl];
     }
 
+    // ✅ Always log history (even if only proof uploaded)
+    const paymentEntry: PaymentHistoryEntry = {
+      amount: updatedAmountToSave ?? 0,
+      received: updatedReceivedToSave,
+      fileUrl: uploadedFileUrl || null,
+      updatedAt: new Date(),
+      updatedBy: userName || userEmail,
+    };
+
     const existingHistory = Array.isArray(existingTask.paymentHistory)
       ? (existingTask.paymentHistory as PaymentHistoryEntry[])
       : [];
-
-    updateData.paymentHistory = [
-      ...existingHistory,
-      {
-        amount: newAmount ?? existingTask.amount ?? 0,
-        received: newReceived ?? existingTask.received ?? 0,
-        fileUrl: uploadedFileUrl || null,
-        updatedAt: new Date(),
-        updatedBy: userName || userEmail,
-      },
-    ] as Prisma.InputJsonValue;
+    updateData.paymentHistory = [...existingHistory, paymentEntry] as Prisma.InputJsonValue;
 
     const updatedTask = await prisma.task.update({
       where: { id: originalTaskId },
@@ -340,19 +342,12 @@ if (newReceived !== undefined) {
     });
 
     return NextResponse.json({ success: true, task: updatedTask, fileUrl: uploadedFileUrl });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("Payment Upload Error (POST):", err);
-    return NextResponse.json(
-      { error: "Upload failed", details: err instanceof Error ? err.message : String(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Upload failed", details: err.message }, { status: 500 });
   }
 }
 
-
-
-
-// PATCH /api/payments/:taskId
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = getUserDetails(req);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: 401 });
@@ -361,55 +356,55 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const originalTaskId = await getEffectiveTaskId(params.id);
 
   try {
-    const body = await req.json();
-    const received = body.received ? Number(body.received) : 0;
+    const { amount, received } = await req.json();
+    const newAmount = typeof amount === "number" ? amount : undefined;
+    const newReceived = typeof received === "number" ? received : undefined;
 
-    const task = await prisma.task.findUnique({
-      where: { id: originalTaskId },
-      select: { amount: true, received: true, paymentHistory: true },
-    });
-    if (!task) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    }
+    const existingTask: Pick<TaskWithPaymentInfo, "amount" | "received" | "paymentHistory"> | null =
+      await prisma.task.findUnique({
+        where: { id: originalTaskId },
+        select: { amount: true, received: true, paymentHistory: true },
+      });
 
-    if (!task.amount) {
-      return NextResponse.json({ error: "Amount must be set before adding received" }, { status: 400 });
-    }
+    if (!existingTask) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
-    const currentReceived = task.received || 0;
-    const updatedReceived = currentReceived + received;
+    const currentAmount = existingTask.amount || 0;
+    const currentReceived = existingTask.received || 0;
 
-    if (updatedReceived > task.amount) {
-      return NextResponse.json({ error: "Received cannot exceed amount" }, { status: 400 });
-    }
+    const updatedAmountToSave = newAmount !== undefined ? newAmount : currentAmount;
+    let updatedReceivedToSave = newReceived !== undefined ? newReceived : currentReceived;
+    if (updatedReceivedToSave > updatedAmountToSave) updatedReceivedToSave = updatedAmountToSave;
 
-    const existingHistory = Array.isArray(task.paymentHistory)
-      ? (task.paymentHistory as PaymentHistoryEntry[])
+    const updateData: Prisma.TaskUpdateInput = { updatedAt: new Date() };
+    if (newAmount !== undefined) updateData.amount = newAmount;
+    if (newReceived !== undefined) updateData.received = newReceived;
+
+    const paymentEntry: PaymentHistoryEntry = {
+      amount: updatedAmountToSave,
+      received: updatedReceivedToSave,
+      fileUrl: null,
+      updatedAt: new Date(),
+      updatedBy: userName || userEmail,
+    };
+
+    const existingHistory = Array.isArray(existingTask.paymentHistory)
+      ? (existingTask.paymentHistory as PaymentHistoryEntry[])
       : [];
+    updateData.paymentHistory = [...existingHistory, paymentEntry] as Prisma.InputJsonValue;
 
     const updatedTask = await prisma.task.update({
       where: { id: originalTaskId },
-      data: {
-        received: updatedReceived,
-        paymentHistory: [
-          ...existingHistory,
-          {
-            amount: task.amount,
-            received,
-            fileUrl: null,
-            updatedAt: new Date(),
-            updatedBy: userName || userEmail,
-          },
-        ] as Prisma.InputJsonValue,
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
 
     return NextResponse.json({ success: true, task: updatedTask });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Payment Update Error (PATCH):", err);
     return NextResponse.json(
-      { error: "Update failed", details: err.message },
+      {
+        error: "Update failed",
+        details: err instanceof Error ? err.message : String(err),
+      },
       { status: 500 }
     );
   }
