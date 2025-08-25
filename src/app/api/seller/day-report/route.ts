@@ -557,29 +557,49 @@ export async function GET(req: Request) {
 
     const tasks = await prisma.task.findMany({
       where: { createdByClerkId: userId, createdAt: { gte: startDate, lt: endDate } },
-      select: { createdAt: true, amount: true, received: true, shopName: true },
+      select: { createdAt: true, amount: true, received: true, shopName: true, phone: true },
     });
 
     const grouped: any = {};
     tasks.forEach((t) => {
       const key = t.shopName || "Unknown";
-      if (!grouped[key]) grouped[key] = { revenue: 0, received: 0, firstCreatedAt: t.createdAt };
+    //   if (!grouped[key]) grouped[key] = { revenue: 0, received: 0, firstCreatedAt: t.createdAt };
+    if (!grouped[key]) {
+  grouped[key] = { 
+    revenue: 0, 
+    received: 0, 
+    firstCreatedAt: t.createdAt,
+    phone: t.phone || null    // ✅ added phone
+  };
+}
+
       grouped[key].revenue += t.amount ?? 0;
       grouped[key].received += t.received ?? 0;
       if (t.createdAt < grouped[key].firstCreatedAt) grouped[key].firstCreatedAt = t.createdAt;
     });
 
+    // const report = Object.entries(grouped).map(([shopName, stats]: any, i) => ({
+    //   taskNumber: i + 1,
+    //   shopName,
+    //   firstCreatedAt: stats.firstCreatedAt,
+    //   totalRevenue: stats.revenue,
+    //   totalReceived: stats.received,
+    //   pending: stats.revenue - stats.received,
+    // }));
     const report = Object.entries(grouped).map(([shopName, stats]: any, i) => ({
-      taskNumber: i + 1,
-      shopName,
-      firstCreatedAt: stats.firstCreatedAt,
-      totalRevenue: stats.revenue,
-      totalReceived: stats.received,
-      pending: stats.revenue - stats.received,
-    }));
+  taskNumber: i + 1,
+  shopName,
+  mobileNumber: stats.phone,   // ✅ added this
+  firstCreatedAt: stats.firstCreatedAt,
+  totalRevenue: stats.revenue,
+  totalReceived: stats.received,
+  pending: stats.revenue - stats.received,
+}));
+
 
     return NextResponse.json(report);
   } catch (e: any) {
     return NextResponse.json({ error: "Internal Error", details: e.message }, { status: 500 });
   }
 }
+
