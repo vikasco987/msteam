@@ -1410,7 +1410,7 @@ import { motion } from 'framer-motion';
 import { useUser } from '@clerk/nextjs';
 
 const allNavItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['admin', 'master'] },
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['admin', 'master', 'seller'] },
   { label: 'Team Board', icon: Users, href: '/team-board', roles: ['admin', 'master', 'seller', 'user'] },
   { label: 'Create Task', icon: ClipboardList, href: '/create-task', roles: ['admin', 'master', 'seller', 'user'] },
   { label: 'Assigned Task', icon: ClipboardCheck, href: '/report', roles: ['admin', 'master', 'seller'] },
