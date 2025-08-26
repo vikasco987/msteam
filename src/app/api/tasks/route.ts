@@ -552,20 +552,11 @@ export async function GET(req: NextRequest) {
         include: {
           subtasks: true,
           notes: true,
-          // ✅ Ensure paymentHistory is included here if needed for single task fetches
-          // paymentHistory: {
-          //   orderBy: { updatedAt: "desc" },
-          // },
+      
         },
       });
 
-      // Sort paymentHistory if it's an array and included
-      // if (task && Array.isArray(task.paymentHistory)) {
-      //   task.paymentHistory.sort(
-      //     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      //   );
-      // }
-
+   
       tasks = task ? [task] : [];
     } else {
       const fetchedTasks = await prisma.task.findMany({
@@ -581,22 +572,11 @@ export async function GET(req: NextRequest) {
         include: {
           subtasks: true,
           notes: true,
-          // ✅ Ensure paymentHistory is included here for all tasks if needed
-          // paymentHistory: {
-          //   orderBy: { updatedAt: "desc" },
-          // },
+        
         },
       });
 
-      // Manually sort paymentHistory for each task if it's present and included
-      // tasks = fetchedTasks.map(task => ({
-      //   ...task,
-      //   paymentHistory: Array.isArray(task.paymentHistory)
-      //     ? [...task.paymentHistory].sort(
-      //       (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      //     )
-      //     : [],
-      // }));
+  
       tasks = fetchedTasks; // Use fetchedTasks directly if paymentHistory isn't being sorted here
     }
 
