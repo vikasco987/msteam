@@ -220,105 +220,9 @@
 
 
 
-// import { prisma } from "../../../../../lib/prisma";
-// import { NextRequest, NextResponse } from "next/server";
-// import { Prisma } from "@prisma/client";
-
-// export async function POST(req: NextRequest) {
-//   try {
-//     const { taskId, field, value } = await req.json();
-
-//     if (!taskId || !["amount", "received"].includes(field)) {
-//       return NextResponse.json(
-//         { error: "Invalid input: Missing task ID or unsupported field." },
-//         { status: 400 }
-//       );
-//     }
-
-//     if (typeof value !== 'number' && value !== null) {
-//       return NextResponse.json(
-//         { error: "Invalid value type. Must be a number or null." },
-//         { status: 400 }
-//       );
-//     }
-
-//     // Optional validation: received should not exceed amount
-//     if (field === "received") {
-//       const existingTask = await prisma.task.findUnique({
-//         where: { id: taskId },
-//         select: { amount: true }
-//       });
-
-//       if (!existingTask) {
-//         return NextResponse.json({ error: "Task not found." }, { status: 404 });
-//       }
-
-//       const total = existingTask.amount ?? 0;
-//       const received = Number(value);
-
-//       if (!isNaN(total) && received > total) {
-//         return NextResponse.json(
-//           { error: "Received amount cannot exceed total amount." },
-//           { status: 400 }
-//         );
-//       }
-//     }
-
-//     // ✅ Build update object dynamically
-//     const dataToUpdate: Prisma.TaskUpdateInput = {
-//       updatedAt: new Date(),
-//       [field]: value, // ✅ This directly updates `amount` or `received`
-//     };
-
-//     const updatedTask = await prisma.task.update({
-//       where: { id: taskId },
-//       data: dataToUpdate,
-//     });
-
-//     return NextResponse.json({ success: true, task: updatedTask }, { status: 200 });
-
-//   } catch (err: unknown) { // FIX: Changed 'any' to 'unknown'
-//     console.error("❌ API Task Update failed:", err);
-
-//     // Provide more specific error messages for common Prisma errors if helpful
-//     if (err instanceof Prisma.PrismaClientKnownRequestError) {
-//       // You can add more specific error handling based on Prisma error codes here
-//       // For example:
-//       // if (err.code === 'P2025') { // Record not found
-//       //   return NextResponse.json({ error: "Task not found." }, { status: 404 });
-//       // }
-//     }
-
-//     return NextResponse.json(
-//       { error: "Internal server error during task update." },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-
-
-
-
-
-
-
-
-
-
 import { prisma } from "../../../../../lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import Pusher from "pusher";
-
-// ✅ Configure Pusher
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID!,
-  key: process.env.PUSHER_KEY!,
-  secret: process.env.PUSHER_SECRET!,
-  cluster: process.env.PUSHER_CLUSTER!,
-  useTLS: true,
-});
 
 export async function POST(req: NextRequest) {
   try {
@@ -331,18 +235,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (typeof value !== "number" && value !== null) {
+    if (typeof value !== 'number' && value !== null) {
       return NextResponse.json(
         { error: "Invalid value type. Must be a number or null." },
         { status: 400 }
       );
     }
 
-    // ✅ Validation: received cannot exceed amount
+    // Optional validation: received should not exceed amount
     if (field === "received") {
       const existingTask = await prisma.task.findUnique({
         where: { id: taskId },
-        select: { amount: true },
+        select: { amount: true }
       });
 
       if (!existingTask) {
@@ -363,29 +267,26 @@ export async function POST(req: NextRequest) {
     // ✅ Build update object dynamically
     const dataToUpdate: Prisma.TaskUpdateInput = {
       updatedAt: new Date(),
-      [field]: value, // will update either `amount` or `received`
+      [field]: value, // ✅ This directly updates `amount` or `received`
     };
 
-    // ✅ Update task in DB
     const updatedTask = await prisma.task.update({
       where: { id: taskId },
       data: dataToUpdate,
     });
 
-    // ✅ Trigger realtime event via Pusher
-    await pusher.trigger("tasks-channel", "task-updated", updatedTask);
+    return NextResponse.json({ success: true, task: updatedTask }, { status: 200 });
 
-    return NextResponse.json(
-      { success: true, task: updatedTask },
-      { status: 200 }
-    );
-  } catch (err: unknown) {
+  } catch (err: unknown) { // FIX: Changed 'any' to 'unknown'
     console.error("❌ API Task Update failed:", err);
 
+    // Provide more specific error messages for common Prisma errors if helpful
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2025") {
-        return NextResponse.json({ error: "Task not found." }, { status: 404 });
-      }
+      // You can add more specific error handling based on Prisma error codes here
+      // For example:
+      // if (err.code === 'P2025') { // Record not found
+      //   return NextResponse.json({ error: "Task not found." }, { status: 404 });
+      // }
     }
 
     return NextResponse.json(
@@ -394,3 +295,102 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+// import { prisma } from "../../../../../lib/prisma";
+// import { NextRequest, NextResponse } from "next/server";
+// import { Prisma } from "@prisma/client";
+// import Pusher from "pusher";
+
+// // ✅ Configure Pusher
+// const pusher = new Pusher({
+//   appId: process.env.PUSHER_APP_ID!,
+//   key: process.env.PUSHER_KEY!,
+//   secret: process.env.PUSHER_SECRET!,
+//   cluster: process.env.PUSHER_CLUSTER!,
+//   useTLS: true,
+// });
+
+// export async function POST(req: NextRequest) {
+//   try {
+//     const { taskId, field, value } = await req.json();
+
+//     if (!taskId || !["amount", "received"].includes(field)) {
+//       return NextResponse.json(
+//         { error: "Invalid input: Missing task ID or unsupported field." },
+//         { status: 400 }
+//       );
+//     }
+
+//     if (typeof value !== "number" && value !== null) {
+//       return NextResponse.json(
+//         { error: "Invalid value type. Must be a number or null." },
+//         { status: 400 }
+//       );
+//     }
+
+//     // ✅ Validation: received cannot exceed amount
+//     if (field === "received") {
+//       const existingTask = await prisma.task.findUnique({
+//         where: { id: taskId },
+//         select: { amount: true },
+//       });
+
+//       if (!existingTask) {
+//         return NextResponse.json({ error: "Task not found." }, { status: 404 });
+//       }
+
+//       const total = existingTask.amount ?? 0;
+//       const received = Number(value);
+
+//       if (!isNaN(total) && received > total) {
+//         return NextResponse.json(
+//           { error: "Received amount cannot exceed total amount." },
+//           { status: 400 }
+//         );
+//       }
+//     }
+
+//     // ✅ Build update object dynamically
+//     const dataToUpdate: Prisma.TaskUpdateInput = {
+//       updatedAt: new Date(),
+//       [field]: value, // will update either `amount` or `received`
+//     };
+
+//     // ✅ Update task in DB
+//     const updatedTask = await prisma.task.update({
+//       where: { id: taskId },
+//       data: dataToUpdate,
+//     });
+
+//     // ✅ Trigger realtime event via Pusher
+//     await pusher.trigger("tasks-channel", "task-updated", updatedTask);
+
+//     return NextResponse.json(
+//       { success: true, task: updatedTask },
+//       { status: 200 }
+//     );
+//   } catch (err: unknown) {
+//     console.error("❌ API Task Update failed:", err);
+
+//     if (err instanceof Prisma.PrismaClientKnownRequestError) {
+//       if (err.code === "P2025") {
+//         return NextResponse.json({ error: "Task not found." }, { status: 404 });
+//       }
+//     }
+
+//     return NextResponse.json(
+//       { error: "Internal server error during task update." },
+//       { status: 500 }
+//     );
+//   }
+// }
