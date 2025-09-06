@@ -1406,6 +1406,7 @@ import {
   CalendarCheck,
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { BarChart3 } from "lucide-react";
 import { motion } from 'framer-motion';
 import { useUser } from '@clerk/nextjs';
 
@@ -1417,8 +1418,9 @@ const allNavItems = [
   { label: 'KAM', icon: Building2, href: '/kam', roles: ['admin', 'master', 'seller'] },
   { label: 'Timeline', icon: LineChart, href: '/timeline', roles: ['admin', 'master', 'seller', 'temp'] },
 //  { label: 'Leads', icon: FileSpreadsheet, href: '/leads', roles: ['admin', 'master', 'seller', 'user'] },
-  { label: 'Sales Dashboard', icon: ShoppingCart, href: '/sales-dashboard', roles: ['admin', 'master'] },
-  { label: 'Seller Dashboard', icon: ShoppingCart, href: '/seller/dashboard', roles: ['seller'] },
+   { label: 'Seller Dashboard', icon: ShoppingCart,  href: '/seller/dashboard', roles: ['seller','admin'] },
+  { label: 'Sales Dashboard', icon: BarChart3, href: '/sales-dashboard', roles: ['admin', 'master'] },
+  
 
   // ✅ NEW: Attendance Admin Link
 //   { label: 'Attendance', icon: CalendarCheck, href: '/admin/attendance', roles: ['admin', 'master'] },
