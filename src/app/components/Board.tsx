@@ -10747,7 +10747,7 @@ export default function Board() {
             🌐 Show All Tasks
           </button> */}
 
-
+{/* 
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`px-3 py-2 text-sm rounded-lg border ${
@@ -10757,7 +10757,14 @@ export default function Board() {
             } flex items-center gap-1`}
           >
             {autoRefresh ? "⏸️ Pause Auto Refresh" : "▶️ Resume Auto Refresh"}
-          </button>
+          </button> */}
+          <button
+  onClick={fetchTasks}
+  className="px-3 py-2 text-sm rounded-lg border bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1"
+>
+  🔄 Refresh
+</button>
+
 
           <button
             onClick={exportTasksToCsv}
