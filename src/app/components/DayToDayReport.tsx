@@ -1967,6 +1967,345 @@
 
 
 
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import { format, subMonths } from "date-fns";
+// import { Search, Loader2, ArrowUp, ArrowDown } from "lucide-react";
+// import { motion, AnimatePresence } from "framer-motion";
+
+// interface ReportEntry {
+//   taskNumber: number;
+//   shopName: string;
+//   mobileNumber?: string;
+//   firstCreatedAt: string;
+//   totalRevenue: number;
+//   totalReceived: number;
+//   pending: number;
+// }
+
+// const getMonthOptions = () => {
+//   return Array.from({ length: 12 }, (_, i) =>
+//     format(subMonths(new Date(), i), "yyyy-MM")
+//   );
+// };
+
+// export default function ShopReport() {
+//   const [data, setData] = useState<ReportEntry[]>([]);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [search, setSearch] = useState("");
+
+//   const [selectedMonth, setSelectedMonth] = useState(
+//     format(new Date(), "yyyy-MM")
+//   );
+//   const [pendingFilter, setPendingFilter] = useState<
+//     "all" | "pending" | "paid"
+//   >("all");
+//   const [sortPendingDesc, setSortPendingDesc] = useState<boolean>(true);
+
+//   useEffect(() => {
+//     const fetchReport = async () => {
+//       setLoading(true);
+//       setError(null);
+//       setData([]);
+//       try {
+//         const res = await fetch(`/api/seller/day-report?month=${selectedMonth}`);
+//         if (!res.ok) {
+//           const errText = await res.text();
+//           throw new Error(
+//             `Failed to fetch report. ${res.status} ${res.statusText}. ${errText}`
+//           );
+//         }
+//         const report: ReportEntry[] = await res.json();
+//         setData(Array.isArray(report) ? report : []);
+//       } catch (err: any) {
+//         console.error(err);
+//         setError(err.message || "Unknown error occurred");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchReport();
+//   }, [selectedMonth]);
+
+//   let filteredData = data.filter((item) =>
+//     Object.values(item).join(" ").toLowerCase().includes(search.toLowerCase())
+//   );
+
+//   if (pendingFilter === "pending")
+//     filteredData = filteredData.filter((item) => item.pending > 0);
+//   if (pendingFilter === "paid")
+//     filteredData = filteredData.filter((item) => item.pending === 0);
+
+//   filteredData = filteredData.sort((a, b) =>
+//     sortPendingDesc ? b.pending - a.pending : a.pending - b.pending
+//   );
+
+//   const formatDate = (isoDate: string) =>
+//     format(new Date(isoDate), "EEE, d LLL yyyy");
+
+//   // 📊 Top summary calculation
+//   const totalRevenue = data.reduce((sum, r) => sum + r.totalRevenue, 0);
+//   const totalReceived = data.reduce((sum, r) => sum + r.totalReceived, 0);
+//   const totalPending = totalRevenue - totalReceived;
+
+//   const receivedPercent =
+//     totalRevenue > 0 ? (totalReceived / totalRevenue) * 100 : 0;
+//   const pendingPercent =
+//     totalRevenue > 0 ? 100 - receivedPercent : 0;
+
+//   return (
+//     <div className="bg-gray-50 min-h-screen flex flex-col">
+//       {/* 🔝 Global Top Pending Line */}
+//       {totalRevenue > 0 && (
+//         <div className="fixed top-0 left-0 w-full bg-white z-50 shadow-md">
+//           <div className="relative w-full h-3 bg-gray-200 overflow-hidden">
+//             {pendingPercent > 0 && (
+//               <motion.div
+//                 initial={{ width: 0 }}
+//                 animate={{ width: `${pendingPercent}%` }}
+//                 transition={{ duration: 1 }}
+//                 className="h-3 bg-gradient-to-r from-red-500 to-orange-500 flex items-center justify-end pr-1 text-[10px] font-bold text-white"
+//               >
+//                 {pendingPercent.toFixed(1)}%
+//               </motion.div>
+//             )}
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Page Content (with padding to avoid overlap) */}
+//       <div className="pt-12 p-8 flex-1">
+//         <div className="max-w-7xl mx-auto">
+//           {/* Header */}
+//           <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+//             <h2 className="text-3xl font-extrabold text-gray-900 flex items-center gap-2">
+//               <span className="text-4xl text-blue-600">📊</span> Shop Report
+//             </h2>
+
+//             {/* Filters */}
+//             <div className="flex flex-col md:flex-row gap-3 items-center w-full md:w-auto bg-white p-3 rounded-2xl shadow-md border border-gray-200">
+//               {/* Month Select */}
+//               <div className="relative">
+//                 <select
+//                   value={selectedMonth}
+//                   onChange={(e) => setSelectedMonth(e.target.value)}
+//                   className="appearance-none px-4 py-2 pr-10 border border-gray-300 rounded-xl bg-gray-50 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-700 font-medium"
+//                 >
+//                   {getMonthOptions().map((month) => {
+//                     const label = format(new Date(month + "-01"), "LLLL, yyyy");
+//                     return (
+//                       <option key={month} value={month}>
+//                         {label}
+//                       </option>
+//                     );
+//                   })}
+//                 </select>
+//                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+//                   ▼
+//                 </span>
+//               </div>
+
+//               {/* Pending Filter */}
+//               <div className="relative">
+//                 <select
+//                   value={pendingFilter}
+//                   onChange={(e) => setPendingFilter(e.target.value as any)}
+//                   className="appearance-none px-4 py-2 pr-10 border border-gray-300 rounded-xl bg-gray-50 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-700 font-medium"
+//                 >
+//                   <option value="all">All Tasks</option>
+//                   <option value="pending">Pending Only</option>
+//                   <option value="paid">Paid Only</option>
+//                 </select>
+//                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+//                   ▼
+//                 </span>
+//               </div>
+
+//               {/* Sort Button */}
+//               <button
+//                 onClick={() => setSortPendingDesc(!sortPendingDesc)}
+//                 className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl shadow hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-2"
+//               >
+//                 Sort Pending{" "}
+//                 {sortPendingDesc ? (
+//                   <ArrowDown size={16} />
+//                 ) : (
+//                   <ArrowUp size={16} />
+//                 )}
+//               </button>
+
+//               {/* Search Input */}
+//               <div className="relative w-full max-w-sm">
+//                 <Search
+//                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+//                   size={18}
+//                 />
+//                 <input
+//                   type="text"
+//                   placeholder="Search shop, revenue, or status..."
+//                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl bg-gray-50 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-gray-700"
+//                   value={search}
+//                   onChange={(e) => setSearch(e.target.value)}
+//                 />
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Loading / Error / Empty */}
+//           <AnimatePresence mode="wait">
+//             {loading && (
+//               <motion.div
+//                 key="loading"
+//                 initial={{ opacity: 0 }}
+//                 animate={{ opacity: 1 }}
+//                 exit={{ opacity: 0 }}
+//                 className="text-center text-blue-600 py-10"
+//               >
+//                 <Loader2 className="inline-block animate-spin text-4xl" />
+//                 <p className="mt-2 text-lg">Loading report...</p>
+//               </motion.div>
+//             )}
+//             {error && (
+//               <motion.div
+//                 key="error"
+//                 initial={{ opacity: 0 }}
+//                 animate={{ opacity: 1 }}
+//                 exit={{ opacity: 0 }}
+//                 className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg shadow-sm"
+//               >
+//                 <h3 className="font-bold text-lg mb-2">Error</h3>
+//                 <p>{error}</p>
+//               </motion.div>
+//             )}
+//             {!loading && !error && filteredData.length === 0 && (
+//               <motion.div
+//                 key="empty"
+//                 initial={{ opacity: 0 }}
+//                 animate={{ opacity: 1 }}
+//                 exit={{ opacity: 0 }}
+//                 className="text-center text-gray-500 py-10"
+//               >
+//                 <p className="text-lg">No tasks found for these filters.</p>
+//               </motion.div>
+//             )}
+//           </AnimatePresence>
+
+//           {/* Data Table */}
+//           <AnimatePresence>
+//             {!loading && !error && filteredData.length > 0 && (
+//               <motion.div
+//                 key="table"
+//                 initial={{ opacity: 0, y: 20 }}
+//                 animate={{ opacity: 1, y: 0 }}
+//                 transition={{ delay: 0.2, duration: 0.5 }}
+//                 className="overflow-x-auto rounded-xl border border-gray-200 shadow-lg"
+//               >
+//                 <table className="min-w-full text-sm">
+//                   <thead className="bg-gray-100 text-gray-700">
+//                     <tr>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         #
+//                       </th>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         Shop
+//                       </th>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         Mobile
+//                       </th>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         First Task Date
+//                       </th>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         Revenue
+//                       </th>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         Received
+//                       </th>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         Pending
+//                       </th>
+//                       <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
+//                         Pending %
+//                       </th>
+//                     </tr>
+//                   </thead>
+//                   <tbody className="divide-y divide-gray-200">
+//                     {filteredData.map((row, idx) => {
+//                       const receivedPercent =
+//                         row.totalRevenue > 0
+//                           ? (row.totalReceived / row.totalRevenue) * 100
+//                           : 0;
+//                       const pendingPercent =
+//                         row.totalRevenue > 0 ? 100 - receivedPercent : 0;
+
+//                       return (
+//                         <tr
+//                           key={idx}
+//                           className={`${
+//                             idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+//                           } hover:bg-blue-50 transition-colors`}
+//                         >
+//                           <td className="px-6 py-4 font-medium text-gray-700">
+//                             {row.taskNumber}
+//                           </td>
+//                           <td className="px-6 py-4 font-medium text-gray-900">
+//                             {row.shopName}
+//                           </td>
+//                           <td className="px-6 py-4 text-gray-700">
+//                             {row.mobileNumber || "-"}
+//                           </td>
+//                           <td className="px-6 py-4 text-gray-500">
+//                             {formatDate(row.firstCreatedAt)}
+//                           </td>
+//                           <td className="px-6 py-4 text-gray-900">
+//                             ₹{row.totalRevenue.toLocaleString()}
+//                           </td>
+//                           <td className="px-6 py-4">
+//                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+//                               ₹{row.totalReceived.toLocaleString()}
+//                             </span>
+//                           </td>
+//                           <td className="px-6 py-4">
+//                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+//                               ₹{row.pending.toLocaleString()}
+//                             </span>
+//                           </td>
+//                           <td className="px-6 py-4 w-32">
+//                             <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden flex">
+//                               {pendingPercent > 0 && (
+//                                 <div
+//                                   className="h-3 bg-gradient-to-r from-red-500 to-orange-500"
+//                                   style={{ width: `${pendingPercent}%` }}
+//                                 ></div>
+//                               )}
+//                             </div>
+//                             <div className="text-xs text-gray-700 mt-1 text-center">
+//                               {pendingPercent.toFixed(2)}%
+//                             </div>
+//                           </td>
+//                         </tr>
+//                       );
+//                     })}
+//                   </tbody>
+//                 </table>
+//               </motion.div>
+//             )}
+//           </AnimatePresence>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -1976,8 +2315,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface ReportEntry {
   taskNumber: number;
-  shopName: string;
-  mobileNumber?: string;
+  shopName: string | null;
+  mobileNumber?: string | null;
   firstCreatedAt: string;
   totalRevenue: number;
   totalReceived: number;
@@ -2252,10 +2591,14 @@ export default function ShopReport() {
                             {row.taskNumber}
                           </td>
                           <td className="px-6 py-4 font-medium text-gray-900">
-                            {row.shopName}
+                            {row.shopName && row.shopName.trim() !== ""
+                              ? row.shopName
+                              : "Unknown"}
                           </td>
                           <td className="px-6 py-4 text-gray-700">
-                            {row.mobileNumber || "-"}
+                            {row.mobileNumber && row.mobileNumber.trim() !== ""
+                              ? row.mobileNumber
+                              : "-"}
                           </td>
                           <td className="px-6 py-4 text-gray-500">
                             {formatDate(row.firstCreatedAt)}
