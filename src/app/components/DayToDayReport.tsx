@@ -2300,12 +2300,6 @@
 //   );
 // }
 
-
-
-
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -2315,12 +2309,13 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface ReportEntry {
   taskNumber: number;
-  shopName: string | null;
-  mobileNumber?: string | null;
+  shopName?: string;
+  mobileNumber?: string;
   firstCreatedAt: string;
   totalRevenue: number;
   totalReceived: number;
   pending: number;
+  taskId?: string; // ✅ Added taskId for fallback
 }
 
 const getMonthOptions = () => {
@@ -2335,12 +2330,8 @@ export default function ShopReport() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const [selectedMonth, setSelectedMonth] = useState(
-    format(new Date(), "yyyy-MM")
-  );
-  const [pendingFilter, setPendingFilter] = useState<
-    "all" | "pending" | "paid"
-  >("all");
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [pendingFilter, setPendingFilter] = useState<"all" | "pending" | "paid">("all");
   const [sortPendingDesc, setSortPendingDesc] = useState<boolean>(true);
 
   useEffect(() => {
@@ -2352,12 +2343,17 @@ export default function ShopReport() {
         const res = await fetch(`/api/seller/day-report?month=${selectedMonth}`);
         if (!res.ok) {
           const errText = await res.text();
-          throw new Error(
-            `Failed to fetch report. ${res.status} ${res.statusText}. ${errText}`
-          );
+          throw new Error(`Failed to fetch report. ${res.status} ${res.statusText}. ${errText}`);
         }
         const report: ReportEntry[] = await res.json();
-        setData(Array.isArray(report) ? report : []);
+
+        // ✅ Fallback: Use MongoDB taskId if shopName missing
+        const formatted = report.map((r) => ({
+          ...r,
+          shopName: r.shopName?.trim() || `Shop ${r.taskId?.slice(-6) || r.taskNumber}`,
+        }));
+
+        setData(Array.isArray(formatted) ? formatted : []);
       } catch (err: any) {
         console.error(err);
         setError(err.message || "Unknown error occurred");
@@ -2382,22 +2378,15 @@ export default function ShopReport() {
     sortPendingDesc ? b.pending - a.pending : a.pending - b.pending
   );
 
-  const formatDate = (isoDate: string) =>
-    format(new Date(isoDate), "EEE, d LLL yyyy");
+  const formatDate = (isoDate: string) => format(new Date(isoDate), "EEE, d LLL yyyy");
 
-  // 📊 Top summary calculation
   const totalRevenue = data.reduce((sum, r) => sum + r.totalRevenue, 0);
   const totalReceived = data.reduce((sum, r) => sum + r.totalReceived, 0);
-  const totalPending = totalRevenue - totalReceived;
-
-  const receivedPercent =
-    totalRevenue > 0 ? (totalReceived / totalRevenue) * 100 : 0;
-  const pendingPercent =
-    totalRevenue > 0 ? 100 - receivedPercent : 0;
+  const pendingPercent = totalRevenue > 0 ? ((totalRevenue - totalReceived) / totalRevenue) * 100 : 0;
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
-      {/* 🔝 Global Top Pending Line */}
+      {/* Global Top Pending Line */}
       {totalRevenue > 0 && (
         <div className="fixed top-0 left-0 w-full bg-white z-50 shadow-md">
           <div className="relative w-full h-3 bg-gray-200 overflow-hidden">
@@ -2415,7 +2404,6 @@ export default function ShopReport() {
         </div>
       )}
 
-      {/* Page Content (with padding to avoid overlap) */}
       <div className="pt-12 p-8 flex-1">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -2435,16 +2423,10 @@ export default function ShopReport() {
                 >
                   {getMonthOptions().map((month) => {
                     const label = format(new Date(month + "-01"), "LLLL, yyyy");
-                    return (
-                      <option key={month} value={month}>
-                        {label}
-                      </option>
-                    );
+                    return <option key={month} value={month}>{label}</option>;
                   })}
                 </select>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  ▼
-                </span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
               </div>
 
               {/* Pending Filter */}
@@ -2458,9 +2440,7 @@ export default function ShopReport() {
                   <option value="pending">Pending Only</option>
                   <option value="paid">Paid Only</option>
                 </select>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  ▼
-                </span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
               </div>
 
               {/* Sort Button */}
@@ -2468,20 +2448,12 @@ export default function ShopReport() {
                 onClick={() => setSortPendingDesc(!sortPendingDesc)}
                 className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl shadow hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-2"
               >
-                Sort Pending{" "}
-                {sortPendingDesc ? (
-                  <ArrowDown size={16} />
-                ) : (
-                  <ArrowUp size={16} />
-                )}
+                Sort Pending {sortPendingDesc ? <ArrowDown size={16} /> : <ArrowUp size={16} />}
               </button>
 
               {/* Search Input */}
               <div className="relative w-full max-w-sm">
-                <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={18}
-                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
                   placeholder="Search shop, revenue, or status..."
@@ -2496,37 +2468,19 @@ export default function ShopReport() {
           {/* Loading / Error / Empty */}
           <AnimatePresence mode="wait">
             {loading && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-center text-blue-600 py-10"
-              >
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-blue-600 py-10">
                 <Loader2 className="inline-block animate-spin text-4xl" />
                 <p className="mt-2 text-lg">Loading report...</p>
               </motion.div>
             )}
             {error && (
-              <motion.div
-                key="error"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg shadow-sm"
-              >
+              <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg shadow-sm">
                 <h3 className="font-bold text-lg mb-2">Error</h3>
                 <p>{error}</p>
               </motion.div>
             )}
             {!loading && !error && filteredData.length === 0 && (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-center text-gray-500 py-10"
-              >
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-gray-500 py-10">
                 <p className="text-lg">No tasks found for these filters.</p>
               </motion.div>
             )}
@@ -2535,77 +2489,32 @@ export default function ShopReport() {
           {/* Data Table */}
           <AnimatePresence>
             {!loading && !error && filteredData.length > 0 && (
-              <motion.div
-                key="table"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="overflow-x-auto rounded-xl border border-gray-200 shadow-lg"
-              >
+              <motion.div key="table" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="overflow-x-auto rounded-xl border border-gray-200 shadow-lg">
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-100 text-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        #
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        Shop
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        Mobile
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        First Task Date
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        Revenue
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        Received
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        Pending
-                      </th>
-                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">
-                        Pending %
-                      </th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">#</th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">Shop</th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">Mobile</th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">First Task Date</th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">Revenue</th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">Received</th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">Pending</th>
+                      <th className="px-6 py-3 text-left font-semibold uppercase tracking-wider">Pending %</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredData.map((row, idx) => {
-                      const receivedPercent =
-                        row.totalRevenue > 0
-                          ? (row.totalReceived / row.totalRevenue) * 100
-                          : 0;
-                      const pendingPercent =
-                        row.totalRevenue > 0 ? 100 - receivedPercent : 0;
+                      const receivedPercent = row.totalRevenue > 0 ? (row.totalReceived / row.totalRevenue) * 100 : 0;
+                      const pendingPercent = row.totalRevenue > 0 ? 100 - receivedPercent : 0;
 
                       return (
-                        <tr
-                          key={idx}
-                          className={`${
-                            idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                          } hover:bg-blue-50 transition-colors`}
-                        >
-                          <td className="px-6 py-4 font-medium text-gray-700">
-                            {row.taskNumber}
-                          </td>
-                          <td className="px-6 py-4 font-medium text-gray-900">
-                            {row.shopName && row.shopName.trim() !== ""
-                              ? row.shopName
-                              : "Unknown"}
-                          </td>
-                          <td className="px-6 py-4 text-gray-700">
-                            {row.mobileNumber && row.mobileNumber.trim() !== ""
-                              ? row.mobileNumber
-                              : "-"}
-                          </td>
-                          <td className="px-6 py-4 text-gray-500">
-                            {formatDate(row.firstCreatedAt)}
-                          </td>
-                          <td className="px-6 py-4 text-gray-900">
-                            ₹{row.totalRevenue.toLocaleString()}
-                          </td>
+                        <tr key={idx} className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50 transition-colors`}>
+                          <td className="px-6 py-4 font-medium text-gray-700">{row.taskNumber}</td>
+                          <td className="px-6 py-4 font-medium text-gray-900">{row.shopName}</td>
+                          <td className="px-6 py-4 text-gray-700">{row.mobileNumber || "-"}</td>
+                          <td className="px-6 py-4 text-gray-500">{formatDate(row.firstCreatedAt)}</td>
+                          <td className="px-6 py-4 text-gray-900">₹{row.totalRevenue.toLocaleString()}</td>
                           <td className="px-6 py-4">
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                               ₹{row.totalReceived.toLocaleString()}
@@ -2619,15 +2528,10 @@ export default function ShopReport() {
                           <td className="px-6 py-4 w-32">
                             <div className="w-full h-3 rounded-full bg-gray-200 overflow-hidden flex">
                               {pendingPercent > 0 && (
-                                <div
-                                  className="h-3 bg-gradient-to-r from-red-500 to-orange-500"
-                                  style={{ width: `${pendingPercent}%` }}
-                                ></div>
+                                <div className="h-3 bg-gradient-to-r from-red-500 to-orange-500" style={{ width: `${pendingPercent}%` }}></div>
                               )}
                             </div>
-                            <div className="text-xs text-gray-700 mt-1 text-center">
-                              {pendingPercent.toFixed(2)}%
-                            </div>
+                            <div className="text-xs text-gray-700 mt-1 text-center">{pendingPercent.toFixed(2)}%</div>
                           </td>
                         </tr>
                       );

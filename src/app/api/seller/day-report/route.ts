@@ -699,6 +699,86 @@
 
 
 
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../../lib/prisma";
+// import { auth } from "@clerk/nextjs/server";
+
+// export async function GET(req: Request) {
+//   try {
+//     const { userId } = await auth();
+//     if (!userId) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const { searchParams } = new URL(req.url);
+//     const month = searchParams.get("month"); // YYYY-MM
+//     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+//       return NextResponse.json({ error: "Invalid month format. Use YYYY-MM" }, { status: 400 });
+//     }
+
+//     const startDate = new Date(`${month}-01T00:00:00.000Z`);
+//     const endDate = new Date(startDate);
+//     endDate.setMonth(endDate.getMonth() + 1);
+
+//     const tasks = await prisma.task.findMany({
+//       where: { createdByClerkId: userId, createdAt: { gte: startDate, lt: endDate } },
+//       select: { createdAt: true, amount: true, received: true, shopName: true, phone: true },
+//     });
+
+//     const grouped: Record<
+//       string,
+//       { revenue: number; received: number; firstCreatedAt: Date; phone?: string | null }
+//     > = {};
+
+//     tasks.forEach((t) => {
+//       // fallback: use shopName > phone > "Shop #<taskNumber>"
+//       const key = t.shopName?.trim() || t.phone?.trim() || `Shop ${t.createdAt.getTime()}`;
+
+//       if (!grouped[key]) {
+//         grouped[key] = {
+//           revenue: 0,
+//           received: 0,
+//           firstCreatedAt: t.createdAt,
+//           phone: t.phone || null,
+//         };
+//       }
+
+//       grouped[key].revenue += t.amount ?? 0;
+//       grouped[key].received += t.received ?? 0;
+
+//       if (t.createdAt < grouped[key].firstCreatedAt) grouped[key].firstCreatedAt = t.createdAt;
+
+//       if (!grouped[key].phone && t.phone) grouped[key].phone = t.phone;
+//     });
+
+//     const report = Object.entries(grouped).map(([shopName, stats], i) => ({
+//       taskNumber: i + 1,
+//       shopName,
+//       mobileNumber: stats.phone || "-",
+//       firstCreatedAt: stats.firstCreatedAt,
+//       totalRevenue: stats.revenue,
+//       totalReceived: stats.received,
+//       pending: stats.revenue - stats.received,
+//     }));
+
+//     return NextResponse.json(report);
+//   } catch (e: any) {
+//     console.error("💥 Day report error:", e);
+//     return NextResponse.json({ error: "Internal Error", details: e.message }, { status: 500 });
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -720,19 +800,28 @@ export async function GET(req: Request) {
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 1);
 
+    // Fetch tasks for the logged-in seller
     const tasks = await prisma.task.findMany({
       where: { createdByClerkId: userId, createdAt: { gte: startDate, lt: endDate } },
-      select: { createdAt: true, amount: true, received: true, shopName: true, phone: true },
+      select: {
+        id: true,            // ✅ Include task ID for fallback
+        createdAt: true,
+        amount: true,
+        received: true,
+        shopName: true,
+        phone: true,
+      },
     });
 
+    // Group tasks by shopName or phone
     const grouped: Record<
       string,
-      { revenue: number; received: number; firstCreatedAt: Date; phone?: string | null }
+      { revenue: number; received: number; firstCreatedAt: Date; phone?: string | null; taskIds: string[] }
     > = {};
 
     tasks.forEach((t) => {
-      // fallback: use shopName > phone > "Shop #<taskNumber>"
-      const key = t.shopName?.trim() || t.phone?.trim() || `Shop ${t.createdAt.getTime()}`;
+      // Use shopName > phone > last 6 chars of task ID as key
+      const key = t.shopName?.trim() || t.phone?.trim() || `Shop ${t.id.slice(-6)}`;
 
       if (!grouped[key]) {
         grouped[key] = {
@@ -740,19 +829,23 @@ export async function GET(req: Request) {
           received: 0,
           firstCreatedAt: t.createdAt,
           phone: t.phone || null,
+          taskIds: [t.id],
         };
+      } else {
+        grouped[key].taskIds.push(t.id);
       }
 
       grouped[key].revenue += t.amount ?? 0;
       grouped[key].received += t.received ?? 0;
 
       if (t.createdAt < grouped[key].firstCreatedAt) grouped[key].firstCreatedAt = t.createdAt;
-
       if (!grouped[key].phone && t.phone) grouped[key].phone = t.phone;
     });
 
+    // Format report array
     const report = Object.entries(grouped).map(([shopName, stats], i) => ({
       taskNumber: i + 1,
+      taskId: stats.taskIds[0],       // ✅ Send taskId for frontend fallback
       shopName,
       mobileNumber: stats.phone || "-",
       firstCreatedAt: stats.firstCreatedAt,
