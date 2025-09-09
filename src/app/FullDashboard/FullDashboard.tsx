@@ -1,4 +1,4 @@
-a"use client";
+"use client";
 
 import React from "react";
 import Filters from "../components/Powerbi/Filters";

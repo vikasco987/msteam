@@ -1420,6 +1420,14 @@ const allNavItems = [
 //  { label: 'Leads', icon: FileSpreadsheet, href: '/leads', roles: ['admin', 'master', 'seller', 'user'] },
    { label: 'MySales Dashboard', icon: ShoppingCart,  href: '/seller/dashboard', roles: ['seller','admin'] },
   { label: 'Sales Dashboard', icon: BarChart3, href: '/sales-dashboard', roles: ['admin', 'master'] },
+
+  { 
+  label: 'Agreement', 
+  icon: FileSpreadsheet, 
+  href: '/FullDashboard/agreement', 
+  roles: ['admin', 'master', 'seller'] 
+},
+
   
 
   // ✅ NEW: Attendance Admin Link
