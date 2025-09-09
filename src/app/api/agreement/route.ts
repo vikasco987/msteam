@@ -1287,6 +1287,10 @@
 
 
 
+
+
+
+
 // src/app/api/agreement/route.ts
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
@@ -1310,14 +1314,19 @@ export async function POST(req: Request) {
       throw new Error("Arial fonts missing in /public/fonts");
     }
 
+    // -------------------- LOGO PATH --------------------
+    const logoPath = path.join(process.cwd(), "public", "logo.png");
+    if (!fs.existsSync(logoPath)) {
+      console.warn("Logo not found in /public/logo.png, skipping logo");
+    }
+
     // -------------------- PDF SETUP --------------------
     const buffers: Buffer[] = [];
-
-    // Pass a real TTF font at creation to avoid Helvetica.afm
     const doc = new PDFDocument({
       margin: 50,
       size: "A4",
       font: arialPath,
+      bufferPages: true, // allow page numbers
     });
 
     doc.on("data", (chunk) => buffers.push(chunk));
@@ -1326,107 +1335,132 @@ export async function POST(req: Request) {
     // -------------------- REGISTER FONTS --------------------
     doc.registerFont("Arial", arialPath);
     doc.registerFont("Arial-Bold", arialBoldPath);
-    doc.font("Arial");
 
     // -------------------- HEADER --------------------
-    doc.font("Arial-Bold").fontSize(22).text("SERVICE AGREEMENT", {
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 50, 30, { width: 100 });
+    }
+
+    doc.moveDown(logoPath ? 4 : 2);
+
+    doc.font("Arial-Bold").fontSize(24).fillColor("#0B3D91").text("SERVICE AGREEMENT", {
       align: "center",
     });
-    doc.moveDown(2);
 
-    doc.font("Arial").fontSize(12).text(
-      `This Agreement is made and entered into on this ${startDate} To ${endDate} Between
-Magic Scale Restaurant Consultant, a [Proprietorship] having its registered office at [Near Air Force Camp, Rajokari, 110038],
-hereinafter referred to as "Consultant," represented by [Akash Verma as Sales Manager],
+    doc.moveDown(1.5);
 
-AND
+    // -------------------- CLIENT INFO --------------------
+    doc.font("Arial").fontSize(12).fillColor("black");
+    doc.text("This Agreement is made and entered into on this ", { continued: true });
+    doc.fillColor("#FF0000").font("Arial-Bold").text(`${startDate}`, { continued: true });
+    doc.font("Arial").fillColor("black").text(" To ", { continued: true });
+    doc.fillColor("#FF0000").font("Arial-Bold").text(`${endDate}`, { continued: false });
+    doc.moveDown(0.5);
 
-${clientName}, a [Proprietorship] having its registered office at ${clientAddress}.`
+    doc.text("Between:", { underline: true });
+    doc.moveDown(0.3);
+
+    doc.font("Arial-Bold").fillColor("#0B3D91").text("Magic Scale Restaurant Consultant");
+    doc.font("Arial").fillColor("black").text(
+      "A Proprietorship having its registered office at Near Air Force Camp, Rajokari, 110038. Represented by Akash Verma as Sales Manager.",
+      { indent: 20 }
     );
 
-    doc.moveDown();
-    doc.text(
-      `WHEREAS: The Client operates a restaurant known as ${clientName}. The Client desires to improve its business performance and has engaged the Consultant to provide consulting services. The Consultant has agreed to provide such services on the terms and conditions set forth herein.`
+    doc.moveDown(0.5);
+
+    doc.font("Arial-Bold").fillColor("#0B3D91").text(clientName);
+    doc.font("Arial").fillColor("black").text(
+      `A Proprietorship having its registered office at ${clientAddress}.`,
+      { indent: 20 }
     );
 
-    doc.moveDown();
-    doc.text(
-      "NOW, Therefore, in consideration of the mutual covenants and promises contained herein, the parties agree as follows:"
+    doc.moveDown(1);
+
+    // -------------------- CLAUSES --------------------
+    const addClause = (title: string, content: string, highlight: boolean = false) => {
+      doc.moveDown(0.5);
+
+      // Separator line
+      const currentY = doc.y;
+      doc.moveTo(50, currentY).lineTo(545, currentY).stroke("#0B3D91");
+
+      doc.moveDown(0.5);
+      doc.font("Arial-Bold").fillColor("#0B3D91").fontSize(14).text(title);
+      doc.moveDown(0.2);
+
+      // Shaded box for important clause
+      if (highlight) {
+        const boxY = doc.y;
+        const boxHeight = doc.heightOfString(content, { width: 495 });
+        doc.rect(50, boxY, 495, boxHeight + 10).fill("#f0f0f0");
+        doc.fillColor("black").text(content, 55, boxY + 5, { width: 485 });
+      } else {
+        doc.fillColor("black").font("Arial").fontSize(12).text(content, { indent: 20 });
+      }
+    };
+
+    addClause(
+      "1. Growth Target:",
+      `The Consultant will assist the Client in achieving a sales target of ${targetSales} in Swiggy and Zomato Marketplace, compared to the previous month's sales figures. ADS budget will be INR 1500 per week. Important: Food quality must be maintained; Consultant is not responsible if complaints are high.`,
+      true
     );
 
-    doc.moveDown(2);
-
-    // -------------------- AGREEMENT SECTIONS --------------------
-    doc.font("Arial-Bold").text("1. Growth Target:");
-    doc.font("Arial").text(
-      `The Consultant will assist the Client in achieving a sales target of ${targetSales} in Swiggy and Zomato Marketplace, compared to the previous month's sales figures. This target will be assessed based on the Client's reported sales data. The Consultant will provide recommendations and support to achieve this target. If food quality is not maintained, and customer complaints are high, then the Consultant is not responsible for the target.`
+    addClause(
+      "2. One Month Account Handling Charges:",
+      `The Client agrees to pay the Consultant a one-month account handling fee of INR ${fee} (Seven Thousand Only).`,
+      true
     );
-    doc.text("ADS budget will be INR 1500 per week.");
-    doc.moveDown();
 
-    doc.font("Arial-Bold").text("2. One Month Account Handling Charges:");
-    doc.font("Arial").text(
-      `The Client agrees to pay the Consultant a one-month account handling fee of INR ${fee} (Seven Thousand Only).`
+    addClause(
+      "3. Term and Termination:",
+      `This Agreement shall be valid for a period commencing on ${startDate} and ending on ${endDate}. Termination by either party requires 15 days written notice.`
     );
-    doc.moveDown();
 
-    doc.font("Arial-Bold").text("3. Term and Termination:");
-    doc.font("Arial").text(
-      `This Agreement shall be valid for a period commencing on ${startDate} and ending on ${endDate}. This agreement may be terminated by either party with 15 days written notice.`
+    addClause(
+      "4. Scope of Services:",
+      `Consultant services include:\n- Menu analysis and recommendations\n- Marketing and promotional strategies\n- Operational efficiency improvements\n- Cost control measures`
     );
-    doc.moveDown();
 
-    doc.font("Arial-Bold").text("4. Scope of Services:");
-    doc.font("Arial").text("The Consultant's services may include, but are not limited to:");
-    doc.list([
-      "Menu analysis and recommendations",
-      "Marketing and promotional strategies",
-      "Operational efficiency improvements",
-      "Cost control measures",
-    ]);
-    doc.text(
-      "The specific scope of services will be mutually agreed upon and may be adjusted from time to time based on the Client's needs and progress towards the growth target."
+    addClause(
+      "5. Confidentiality:",
+      `Both parties agree to keep all shared information confidential.`
     );
-    doc.moveDown();
 
-    doc.font("Arial-Bold").text("5. Confidentiality:");
-    doc.font("Arial").text(
-      "Both parties agree to keep confidential any and all information shared during the course of this engagement."
-    );
-    doc.moveDown();
-
-    doc.font("Arial-Bold").text("6. Entire Agreement:");
-    doc.font("Arial").text(
-      "This Agreement constitutes the entire understanding between the parties and supersedes all prior negotiations and agreements, whether written or oral."
+    addClause(
+      "6. Entire Agreement:",
+      `This Agreement constitutes the entire understanding between the parties and supersedes all prior negotiations and agreements.`
     );
 
     // -------------------- SIGNATURES --------------------
-    doc.moveDown(3);
-    doc.font("Arial-Bold").text("Magic Scale Restaurant Consultant");
-    doc.font("Arial").text("By: Akash Verma, Manager");
     doc.moveDown(2);
-    doc.font("Arial-Bold").text(clientName);
+    doc.font("Arial-Bold").text("Magic Scale Restaurant Consultant", { continued: false });
+    doc.font("Arial").text("By: Akash Verma, Manager");
+
+    doc.moveDown(2);
+    doc.font("Arial-Bold").text(clientName, { continued: false });
     doc.font("Arial").text("By: Authorized Signatory");
 
-    // -------------------- FOOTER --------------------
+    // -------------------- FOOTER & PAGE NUMBERS --------------------
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(i);
+      doc.font("Arial").fontSize(10).fillColor("gray");
+      doc.text(
+        `Page ${i + 1} of ${pages.count}`,
+        50,
+        doc.page.height - 50,
+        { align: "center", width: doc.page.width - 100 }
+      );
+    }
+
     const today = new Date();
     const formattedDate = today.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "long",
       year: "numeric",
     });
-
-    doc.moveDown(3);
-    doc.font("Arial-Bold").fontSize(10).text("Magic Scale", { align: "center" });
-    doc.font("Arial").text("Near Air Force Camp, Rajokari, 110038", {
-      align: "center",
-    });
-    doc.text("+91 9311330885", { align: "center" });
-    doc.text("https://magicscale.in", { align: "center" });
-    doc.moveDown(1);
-    doc.font("Arial").text(`Agreement generated on: ${formattedDate}`, {
-      align: "right",
-    });
+    doc.moveDown(2);
+    doc.font("Arial").fontSize(10).text(`Agreement generated on: ${formattedDate}`, { align: "right" });
 
     // -------------------- END PDF --------------------
     doc.end();
