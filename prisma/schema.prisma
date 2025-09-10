@@ -108,15 +108,23 @@ model User {
   updatedAt DateTime @updatedAt
 }    
 
+
 model Attendance {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String
-  faceImage    String   // base64 or URL
-  location     Json
-  checkIn      DateTime
-  checkOut     DateTime?
-  date         DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String
+  faceImage      String?  
+  location       Json?
+  deviceInfo     String?  
+  checkIn        DateTime?
+  checkOut       DateTime?
+  checkInReason  String?  
+  checkOutReason String?  
+  date           DateTime @default(now())
+  status         String?   // "On Time", "Late", "Unverified", etc.
+  verified       Boolean   @default(false) // ✅ new field for Tish geo-fencing
+  workingHours   Float?
+  overtimeHours  Float?
+  remarks        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
- 

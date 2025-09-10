@@ -1427,6 +1427,7 @@ const allNavItems = [
   href: '/FullDashboard/agreement', 
   roles: ['admin', 'master', 'seller'] 
 },
+{ label: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance', roles: ['admin', 'master', 'seller'] },
 
   
 
