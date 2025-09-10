@@ -1428,6 +1428,7 @@ const allNavItems = [
   roles: ['admin', 'master', 'seller'] 
 },
 { label: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance', roles: ['admin', 'master', 'seller'] },
+{ label: 'Tish', icon: CalendarCheck, href: '/dashboard/attendance/tish', roles: ['admin', 'master'] },
 
   
 
