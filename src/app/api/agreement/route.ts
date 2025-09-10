@@ -1287,6 +1287,23 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // src/app/api/agreement/route.ts
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
@@ -1317,7 +1334,7 @@ export async function POST(req: Request) {
     // -------------------- PDF SETUP --------------------
     const buffers: Buffer[] = [];
     const doc = new PDFDocument({
-      margin: 60,
+      margin: 60, // ✅ ensures equal margins on all sides
       size: "A4",
       font: arialPath,
       bufferPages: true,
@@ -1342,7 +1359,8 @@ export async function POST(req: Request) {
 
     // -------------------- HEADER FUNCTION --------------------
     const renderHeader = () => {
-      const margin = 60;
+      const margin = doc.page.margins.left;
+
       // Left side: Logo + Client Name
       if (logoExists) {
         doc.image(logoPath, margin, 30, { width: 70 });
@@ -1353,11 +1371,14 @@ export async function POST(req: Request) {
         .text(clientName, margin, 110, { width: 200 });
 
       // Right side: Company info
-      const rightX = doc.page.width - 260;
+      const rightX = doc.page.width - doc.page.margins.right - 200;
       doc.font("Arial-Bold").fontSize(11).fillColor("#0B3D91")
         .text("Magic Scale", rightX, 40, { align: "right", width: 200 });
       doc.font("Arial").fontSize(10).fillColor("black")
-        .text("Near Air Force Camp, Rajokari, 110038", rightX, 55, { align: "right", width: 200 });
+        .text("Near Air Force Camp, Rajokari, 110038", rightX, 55, {
+          align: "right",
+          width: 200,
+        });
       doc.text("+91 8826073117", rightX, 70, { align: "right", width: 200 });
       doc.fillColor("blue")
         .text("https://magicscale.in", rightX, 85, {
@@ -1376,102 +1397,114 @@ export async function POST(req: Request) {
           width: doc.page.width,
         });
 
-      // Reset Y position after header
+      // ✅ Reset Y position after header
       doc.y = 180;
     };
 
-    // -------------------- HEADER FIRST PAGE --------------------
+    // -------------------- RENDER HEADER ON FIRST PAGE --------------------
     renderHeader();
 
     // -------------------- MAIN TITLE --------------------
     doc.moveDown(1);
     doc.font("Arial-Bold")
-      .fontSize(22)
+      .fontSize(24)
       .fillColor("#0B3D91")
       .text("SERVICE AGREEMENT", { align: "center" });
-    doc.moveDown(1.5);
+    doc.moveDown(2);
 
-    // -------------------- INTRO TEXT (CENTERED) --------------------
-    doc.font("Arial").fontSize(12).fillColor("black").text(
-      `This Agreement is made and entered into on this ${startDate} To ${endDate}`,
-      { align: "center", width: doc.page.width - 120 }
-    );
-    doc.moveDown(1);
+    // -------------------- CLIENT INFO --------------------
+    const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-    doc.text("Between:", { align: "center", underline: true });
-    doc.moveDown(0.8);
+    doc.font("Arial").fontSize(12).fillColor("black");
+    doc.text("This Agreement is made and entered into on this ", doc.page.margins.left, doc.y, {
+      continued: true,
+      width: contentWidth,
+    });
+    doc.fillColor("#FF0000").font("Arial-Bold").text(`${startDate}`, { continued: true });
+    doc.font("Arial").fillColor("black").text(" To ", { continued: true });
+    doc.fillColor("#FF0000").font("Arial-Bold").text(`${endDate}`);
+    doc.moveDown(0.5);
+
+    doc.text("Between:", { underline: true, width: contentWidth });
+    doc.moveDown(0.3);
 
     doc.font("Arial-Bold").fillColor("#0B3D91").text("Magic Scale Restaurant Consultant", {
-      align: "center",
+      width: contentWidth,
     });
     doc.font("Arial").fillColor("black").text(
       "A Proprietorship having its registered office at Near Air Force Camp, Rajokari, 110038. Represented by Akash Verma as Sales Manager.",
-      { width: doc.page.width - 120, align: "center", lineGap: 3 }
+      { indent: 20, width: contentWidth }
     );
-    doc.moveDown(0.8);
+    doc.moveDown(0.5);
 
-    doc.font("Arial-Bold").fillColor("#0B3D91").text(clientName, { align: "center" });
+    doc.font("Arial-Bold").fillColor("#0B3D91").text(clientName, { width: contentWidth });
     doc.font("Arial").fillColor("black").text(
       `A Proprietorship having its registered office at ${clientAddress}.`,
-      { width: doc.page.width - 120, align: "center", lineGap: 3 }
+      { indent: 20, width: contentWidth }
     );
-    doc.moveDown(1.5);
+    doc.moveDown(1);
 
     // -------------------- WHEREAS --------------------
     doc.font("Arial-Bold").fillColor("#0B3D91").fontSize(14).text("WHEREAS:", {
-      align: "left",
+      width: contentWidth,
     });
     doc.moveDown(0.3);
     doc.font("Arial").fillColor("black").fontSize(12).text(
       `The Client operates a restaurant known as ${clientName}. The Client desires to improve its business performance and has engaged the Consultant to provide consulting services. The Consultant has agreed to provide such services on the terms and conditions set forth herein.`,
-      { width: doc.page.width - 120, align: "justify", lineGap: 3 }
+      { indent: 20, width: contentWidth, lineGap: 2 }
     );
-    doc.moveDown(0.5);
+    doc.moveDown(0.3);
     doc.font("Arial-Bold").text(
       "NOW, Therefore, in consideration of the mutual covenants and promises contained herein, the parties agree as follows:",
-      { width: doc.page.width - 120, align: "justify", lineGap: 3 }
+      { indent: 0, width: contentWidth, lineGap: 2 }
     );
-    doc.moveDown(1.5);
+    doc.moveDown(1);
 
     // -------------------- CLAUSE HELPER --------------------
     const addClause = (title: string, content: string, highlight = false) => {
+      if (doc.y > doc.page.height - 180) {
+        doc.addPage();
+        renderHeader();
+      }
+
       doc.moveDown(0.8);
 
       doc.font("Arial-Bold").fillColor("#0B3D91").fontSize(14).text(title, {
-        width: doc.page.width - 120,
+        width: contentWidth,
         align: "left",
       });
       doc.moveDown(0.2);
 
       if (highlight) {
         const boxY = doc.y;
-        const boxWidth = doc.page.width - doc.page.margins.left - 60;
-        const boxHeight = doc.heightOfString(content, { width: boxWidth });
+        const boxHeight = doc.heightOfString(content, { width: contentWidth - 20 });
 
-        doc.rect(doc.page.margins.left, boxY - 2, boxWidth, boxHeight + 12).fill("#f7f7f7");
+        doc.rect(doc.page.margins.left, boxY - 2, contentWidth, boxHeight + 12).fill("#f7f7f7");
         doc.fillColor("black").font("Arial").fontSize(12).text(content, doc.page.margins.left + 10, boxY + 4, {
-          width: boxWidth - 20,
+          width: contentWidth - 20,
           align: "justify",
           lineGap: 3,
         });
         doc.moveDown(1.2);
       } else {
         doc.fillColor("black").font("Arial").fontSize(12).text(content, {
-          width: doc.page.width - 120,
+          width: contentWidth,
           align: "justify",
           lineGap: 3,
         });
       }
     };
 
+    // -------------------- CLAUSES --------------------
     addClause(
       "1. Growth Target:",
       `The Consultant will assist the Client in achieving a sales target of ${targetSales} in Swiggy and Zomato Marketplace, compared to the previous month's sales figures. ADS budget will be INR 1500 per week. Important: Food quality must be maintained; Consultant is not responsible if complaints are high.`,
       true
     );
 
-    addClause(
-      "2. One Month Account Handling Charges:",
+    
+     addClause(
+      "                     2. One Month Account Handling Charges:",
       `The Client agrees to pay the Consultant a one-month account handling fee of INR ${fee} (Seven Thousand Only).`,
       true
     );
@@ -1480,6 +1513,7 @@ export async function POST(req: Request) {
       "3. Term and Termination:",
       `This Agreement shall be valid for a period commencing on ${startDate} and ending on ${endDate}. Termination by either party requires 15 days written notice.`
     );
+
 
     addClause(
       "4. Scope of Services:",
@@ -1498,34 +1532,29 @@ export async function POST(req: Request) {
 
     // -------------------- SIGNATURES --------------------
     doc.moveDown(2);
-    doc.font("Arial-Bold").text("Magic Scale Restaurant Consultant");
+    doc.font("Arial-Bold").text("Magic Scale Restaurant Consultant", {
+      width: contentWidth,
+    });
     doc.font("Arial").text("By: Akash Verma, Manager");
 
     doc.moveDown(2);
-    doc.font("Arial-Bold").text(clientName);
+    doc.font("Arial-Bold").text(clientName, { width: contentWidth });
     doc.font("Arial").text("By: Authorized Signatory");
 
-    // -------------------- FOOTER --------------------
+    // -------------------- FOOTER: PAGE NUMBERS --------------------
     const pages = doc.bufferedPageRange();
     for (let i = 0; i < pages.count; i++) {
       doc.switchToPage(i);
       renderHeader();
       doc.font("Arial").fontSize(10).fillColor("gray");
-
-      // Company footer (bottom center)
-      doc.text(
-        "Magic Scale | Near Air Force Camp, Rajokari, 110038 | +91 8826073117 | https://magicscale.in",
-        0,
-        doc.page.height - 60,
-        { align: "center", width: doc.page.width }
-      );
-
-      // Page numbers
       doc.text(
         `Page ${i + 1} of ${pages.count}`,
-        0,
-        doc.page.height - 45,
-        { align: "center", width: doc.page.width }
+        doc.page.margins.left,
+        doc.page.height - 50,
+        {
+          align: "center",
+          width: contentWidth,
+        }
       );
     }
 
