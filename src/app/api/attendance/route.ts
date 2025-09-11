@@ -983,7 +983,1202 @@
 
 
 
-// src/app/api/attendance/route.ts
+// // src/app/api/attendance/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { users } from "@clerk/clerk-sdk-node";
+
+// const TISH_LAT = 28.5163558;
+// const TISH_LNG = 77.1035919;
+// const MAX_DISTANCE_METERS = 100;
+// const OFFICE_START = 10;
+// const OFFICE_END = 19;
+
+// function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+//   const R = 6371e3;
+//   const toRad = (x: number) => (x * Math.PI) / 180;
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
+
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { type, reason, remarks, lat, lng } = await req.json();
+//     const now = new Date();
+//     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+//     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+//     const deviceInfo = req.headers.get("user-agent") || "unknown device";
+
+//     // ✅ Fetch Clerk user details (like your tish code)
+//     let employeeName = "Unknown";
+//     try {
+//       const clerkUser = await users.getUser(userId);
+//       employeeName =
+//         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+//         clerkUser.username ||
+//         clerkUser.emailAddresses[0]?.emailAddress ||
+//         clerkUser.id;
+//     } catch (err) {
+//       console.error("Clerk fetch error:", err);
+//     }
+
+//     // Find or create today's attendance
+//     let attendance = await prisma.attendance.findFirst({
+//       where: { userId, date: today },
+//     });
+
+//     if (!attendance) {
+//       attendance = await prisma.attendance.create({
+//         data: { userId, employeeName, date: today },
+//       });
+//     }
+
+//     let distance: number | null = null;
+//     let verified = false;
+//     if (lat && lng) {
+//       distance = getDistance(lat, lng, TISH_LAT, TISH_LNG);
+//       verified = distance <= MAX_DISTANCE_METERS;
+//     }
+
+//     let status = attendance.status;
+
+//     if (type === "checkIn") {
+//       const hour = now.getHours();
+//       status = !verified ? "Unverified" : hour >= OFFICE_START ? "Late" : "On Time";
+
+//       if (hour >= OFFICE_START && !reason && verified) {
+//         return NextResponse.json({ error: "Late check-in requires a reason" }, { status: 400 });
+//       }
+
+//       attendance = await prisma.attendance.update({
+//         where: { id: attendance.id },
+//         data: {
+//           employeeName, // ✅ save name
+//           checkIn: now,
+//           checkInReason: reason || null,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     if (type === "checkOut") {
+//       const hour = now.getHours();
+//       let overtime = 0;
+//       let workingHours = 0;
+//       status = !verified ? "Unverified" : attendance.status;
+
+//       if (hour < OFFICE_END && !reason && verified) {
+//         return NextResponse.json({ error: "Early check-out requires a reason" }, { status: 400 });
+//       }
+
+//       if (attendance.checkIn) {
+//         workingHours = (now.getTime() - attendance.checkIn.getTime()) / (1000 * 60 * 60);
+//         if (hour > OFFICE_END) overtime = hour - OFFICE_END;
+//         if (hour < OFFICE_END && verified) status = "Early Leave";
+//         else if (status !== "Late" && verified) status = "On Time";
+//       }
+
+//       attendance = await prisma.attendance.update({
+//         where: { id: attendance.id },
+//         data: {
+//           employeeName, // ✅ save name
+//           checkOut: now,
+//           checkOutReason: reason || null,
+//           workingHours,
+//           overtimeHours: overtime,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+          
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err) {
+//     console.error("Attendance error:", err);
+//     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+// // src/app/api/attendance/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { users } from "@clerk/clerk-sdk-node";
+
+// const TISH_LAT = 28.5163558;
+// const TISH_LNG = 77.1035919;
+// const MAX_DISTANCE_METERS = 100;
+// const OFFICE_START = 7;   // ✅ start 7 AM
+// const OFFICE_END = 19;    // ✅ end 7 PM
+
+// function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+//   const R = 6371e3;
+//   const toRad = (x: number) => (x * Math.PI) / 180;
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
+
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { type, reason, remarks, lat, lng } = await req.json();
+//     const now = new Date();
+
+//     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+//     const deviceInfo = req.headers.get("user-agent") || "unknown device";
+
+//     // ✅ Fetch Clerk user details
+//     let employeeName = "Unknown";
+//     try {
+//       const clerkUser = await users.getUser(userId);
+//       employeeName =
+//         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+//         clerkUser.username ||
+//         clerkUser.emailAddresses[0]?.emailAddress ||
+//         clerkUser.id;
+//     } catch (err) {
+//       console.error("Clerk fetch error:", err);
+//     }
+
+//     // ✅ Location check
+//     let distance: number | null = null;
+//     let verified = false;
+//     if (lat && lng) {
+//       distance = getDistance(lat, lng, TISH_LAT, TISH_LNG);
+//       verified = distance <= MAX_DISTANCE_METERS;
+//     }
+
+//     let attendance;
+
+//     if (type === "checkIn") {
+//       const hour = now.getHours();
+
+//       // ✅ Only between 7 AM – 7 PM
+//       if (hour < OFFICE_START || hour > OFFICE_END) {
+//         return NextResponse.json(
+//           { error: "Check-in allowed only between 7 AM and 7 PM" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Prevent multiple check-ins in one day
+//       const startDate = new Date(now);
+//       startDate.setHours(0, 0, 0, 0);
+
+//       const endDate = new Date(now);
+//       endDate.setHours(23, 59, 59, 999);
+
+//       const existing = await prisma.attendance.findFirst({
+//         where: { userId, checkIn: { gte: startDate, lte: endDate } },
+//       });
+
+//       if (existing) {
+//         return NextResponse.json(
+//           { error: "Already checked in today" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Status calculation
+//       let status = !verified ? "Unverified" : "On Time";
+//       if (hour > 10 && verified) status = "Late"; // Late after 10AM
+//       if (hour > 10 && !reason && verified) {
+//         return NextResponse.json(
+//           { error: "Late check-in requires a reason" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Create record
+//       attendance = await prisma.attendance.create({
+//         data: {
+//           userId,
+//           employeeName,
+//           date: now,
+//           checkIn: now,
+//           checkInReason: reason || null,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     if (type === "checkOut") {
+//       // ✅ Get today’s check-in
+//       const startDate = new Date(now);
+//       startDate.setHours(0, 0, 0, 0);
+
+//       const endDate = new Date(now);
+//       endDate.setHours(23, 59, 59, 999);
+
+//       const record = await prisma.attendance.findFirst({
+//         where: { userId, checkIn: { gte: startDate, lte: endDate } },
+//         orderBy: { checkIn: "desc" },
+//       });
+
+//       if (!record) {
+//         return NextResponse.json(
+//           { error: "No check-in found for today" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Calculate working hours
+//       let workingHours = 0;
+//       let overtime = 0;
+//       let status = !verified ? "Unverified" : record.status;
+
+//       if (record.checkIn) {
+//         workingHours =
+//           (now.getTime() - record.checkIn.getTime()) / (1000 * 60 * 60);
+
+//         const hour = now.getHours();
+//         if (hour < OFFICE_END && verified) status = "Early Leave";
+//         else if (status !== "Late" && verified) status = "On Time";
+//         if (hour > OFFICE_END) overtime = hour - OFFICE_END;
+//       }
+
+//       attendance = await prisma.attendance.update({
+//         where: { id: record.id },
+//         data: {
+//           checkOut: now,
+//           checkOutReason: reason || null,
+//           workingHours,
+//           overtimeHours: overtime,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err) {
+//     console.error("Attendance error:", err);
+//     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+// // src/app/api/attendance/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { users } from "@clerk/clerk-sdk-node";
+
+// const TISH_LAT = 28.5163558;
+// const TISH_LNG = 77.1035919;
+// const MAX_DISTANCE_METERS = 100;
+// const OFFICE_START = 7;   // ✅ 7 AM
+// const OFFICE_END = 19;    // ✅ 7 PM
+
+// function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+//   const R = 6371e3;
+//   const toRad = (x: number) => (x * Math.PI) / 180;
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
+
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
+
+// // ✅ GET: fetch today’s record
+// export async function GET(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const now = new Date();
+//     const startDate = new Date(now);
+//     startDate.setHours(0, 0, 0, 0);
+//     const endDate = new Date(now);
+//     endDate.setHours(23, 59, 59, 999);
+
+//     const record = await prisma.attendance.findFirst({
+//       where: { userId, checkIn: { gte: startDate, lte: endDate } },
+//       orderBy: { checkIn: "desc" },
+//     });
+
+//     return NextResponse.json({ record });
+//   } catch (err) {
+//     console.error("Attendance fetch error:", err);
+//     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+//   }
+// }
+
+// // ✅ POST: checkIn / checkOut
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { type, reason, remarks, lat, lng } = await req.json();
+//     const now = new Date();
+
+//     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+//     const deviceInfo = req.headers.get("user-agent") || "unknown device";
+
+//     // ✅ Fetch Clerk user details
+//     let employeeName = "Unknown";
+//     try {
+//       const clerkUser = await users.getUser(userId);
+//       employeeName =
+//         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+//         clerkUser.username ||
+//         clerkUser.emailAddresses[0]?.emailAddress ||
+//         clerkUser.id;
+//     } catch (err) {
+//       console.error("Clerk fetch error:", err);
+//     }
+
+//     // ✅ Location check
+//     let distance: number | null = null;
+//     let verified = false;
+//     if (lat && lng) {
+//       distance = getDistance(lat, lng, TISH_LAT, TISH_LNG);
+//       verified = distance <= MAX_DISTANCE_METERS;
+//     }
+
+//     let attendance;
+
+//     if (type === "checkIn") {
+//       const hour = now.getHours();
+
+//       // ✅ Only between 7 AM – 7 PM
+//       if (hour < OFFICE_START || hour > OFFICE_END) {
+//         return NextResponse.json(
+//           { error: "Check-in allowed only between 7 AM and 7 PM" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Prevent multiple check-ins in one day
+//       const startDate = new Date(now);
+//       startDate.setHours(0, 0, 0, 0);
+//       const endDate = new Date(now);
+//       endDate.setHours(23, 59, 59, 999);
+
+//       const existing = await prisma.attendance.findFirst({
+//         where: { userId, checkIn: { gte: startDate, lte: endDate } },
+//       });
+
+//       if (existing) {
+//         return NextResponse.json(
+//           { error: "Already checked in today" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Status calculation
+//       let status = !verified ? "Unverified" : "On Time";
+//       if (hour > 10 && verified) status = "Late"; // Late after 10 AM
+//       if (hour > 10 && !reason && verified) {
+//         return NextResponse.json(
+//           { error: "Late check-in requires a reason" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Create record
+//       attendance = await prisma.attendance.create({
+//         data: {
+//           userId,
+//           employeeName,
+//           date: now,
+//           checkIn: now,
+//           checkInReason: reason || null,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     if (type === "checkOut") {
+//       // ✅ Get today’s check-in
+//       const startDate = new Date(now);
+//       startDate.setHours(0, 0, 0, 0);
+//       const endDate = new Date(now);
+//       endDate.setHours(23, 59, 59, 999);
+
+//       const record = await prisma.attendance.findFirst({
+//         where: { userId, checkIn: { gte: startDate, lte: endDate } },
+//         orderBy: { checkIn: "desc" },
+//       });
+
+//       if (!record) {
+//         return NextResponse.json(
+//           { error: "No check-in found for today" },
+//           { status: 400 }
+//         );
+//       }
+
+//       if (record.checkOut) {
+//         return NextResponse.json(
+//           { error: "Already checked out today" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Calculate working hours
+//       let workingHours = 0;
+//       let overtime = 0;
+//       let status = !verified ? "Unverified" : record.status;
+
+//       if (record.checkIn) {
+//         workingHours =
+//           (now.getTime() - record.checkIn.getTime()) / (1000 * 60 * 60);
+
+//         const hour = now.getHours();
+//         if (hour < OFFICE_END && verified) status = "Early Leave";
+//         else if (status !== "Late" && verified) status = "On Time";
+//         if (hour > OFFICE_END) overtime = hour - OFFICE_END;
+//       }
+
+//       attendance = await prisma.attendance.update({
+//         where: { id: record.id },
+//         data: {
+//           checkOut: now,
+//           checkOutReason: reason || null,
+//           workingHours,
+//           overtimeHours: overtime,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err) {
+//     console.error("Attendance error:", err);
+//     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+//   }
+// }
+
+
+// // src/app/api/attendance/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { users } from "@clerk/clerk-sdk-node";
+
+// const TISH_LAT = 28.5163558;
+// const TISH_LNG = 77.1035919;
+// const MAX_DISTANCE_METERS = 100;
+// const OFFICE_START = 7; // 7 AM
+// const OFFICE_END = 19; // 7 PM
+
+// function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+//   const R = 6371e3;
+//   const toRad = (x: number) => (x * Math.PI) / 180;
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
+
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
+
+// function getDayRange(date: Date) {
+//   const start = new Date(date);
+//   start.setHours(0, 0, 0, 0);
+
+//   const end = new Date(date);
+//   end.setHours(23, 59, 59, 999);
+
+//   return { start, end };
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { type, reason, remarks, lat, lng } = await req.json();
+//     const now = new Date();
+//     const { start, end } = getDayRange(now);
+
+//     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+//     const deviceInfo = req.headers.get("user-agent") || "unknown device";
+
+//     // ✅ Fetch Clerk user details
+//     let employeeName = "Unknown";
+//     try {
+//       const clerkUser = await users.getUser(userId);
+//       employeeName =
+//         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+//         clerkUser.username ||
+//         clerkUser.emailAddresses[0]?.emailAddress ||
+//         clerkUser.id;
+//     } catch (err) {
+//       console.error("Clerk fetch error:", err);
+//     }
+
+//     // ✅ Location check
+//     let distance: number | null = null;
+//     let verified = false;
+//     if (lat && lng) {
+//       distance = getDistance(lat, lng, TISH_LAT, TISH_LNG);
+//       verified = distance <= MAX_DISTANCE_METERS;
+//     }
+
+//     let attendance;
+
+//     if (type === "checkIn") {
+//       const hour = now.getHours();
+
+//       if (hour < OFFICE_START || hour > OFFICE_END) {
+//         return NextResponse.json(
+//           { error: "Check-in allowed only between 7 AM and 7 PM" },
+//           { status: 400 }
+//         );
+//       }
+
+//       // ✅ Look for latest *today’s* record
+//       const lastRecord = await prisma.attendance.findFirst({
+//         where: { userId, date: start },
+//         orderBy: { createdAt: "desc" },
+//       });
+
+//       if (lastRecord && lastRecord.checkIn && !lastRecord.checkOut) {
+//         return NextResponse.json({ error: "Already checked in, please check out first" }, { status: 400 });
+//       }
+
+//       let status = !verified ? "Unverified" : "On Time";
+//       if (hour > 10 && verified) status = "Late";
+//       if (hour > 10 && !reason && verified) {
+//         return NextResponse.json(
+//           { error: "Late check-in requires a reason" },
+//           { status: 400 }
+//         );
+//       }
+
+//       attendance = await prisma.attendance.create({
+//         data: {
+//           userId,
+//           employeeName,
+//           date: start, // ✅ normalized midnight
+//           checkIn: now,
+//           checkInReason: reason || null,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     if (type === "checkOut") {
+//       const record = await prisma.attendance.findFirst({
+//         where: { userId, date: start },
+//         orderBy: { createdAt: "desc" },
+//       });
+
+//       if (!record || !record.checkIn) {
+//         return NextResponse.json(
+//           { error: "No check-in found for today" },
+//           { status: 400 }
+//         );
+//       }
+
+//       if (record.checkOut) {
+//         return NextResponse.json(
+//           { error: "Already checked out today" },
+//           { status: 400 }
+//         );
+//       }
+
+//       let workingHours = 0;
+//       let overtime = 0;
+//       let status = !verified ? "Unverified" : record.status;
+
+//       if (record.checkIn) {
+//         workingHours = (now.getTime() - record.checkIn.getTime()) / (1000 * 60 * 60);
+
+//         const hour = now.getHours();
+//         if (hour < OFFICE_END && verified) status = "Early Leave";
+//         else if (status !== "Late" && verified) status = "On Time";
+//         if (hour > OFFICE_END) overtime = hour - OFFICE_END;
+//       }
+
+//       attendance = await prisma.attendance.update({
+//         where: { id: record.id },
+//         data: {
+//           checkOut: now,
+//           checkOutReason: reason || null,
+//           workingHours,
+//           overtimeHours: overtime,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err: any) {
+//     console.error("Attendance error:", err);
+//     return NextResponse.json(
+//       { error: "Something went wrong", details: err.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+// // src/app/api/attendance/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { users } from "@clerk/clerk-sdk-node";
+
+// const TISH_LAT = 28.5163558;
+// const TISH_LNG = 77.1035919;
+// const MAX_DISTANCE_METERS = 100;
+// const OFFICE_START = 7; // 7 AM
+// const OFFICE_END = 19; // 7 PM
+
+// function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+//   const R = 6371e3;
+//   const toRad = (x: number) => (x * Math.PI) / 180;
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
+
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
+
+// function getDayRange(date: Date) {
+//   const start = new Date(date);
+//   start.setHours(0, 0, 0, 0);
+
+//   const end = new Date(date);
+//   end.setHours(23, 59, 59, 999);
+
+//   return { start, end };
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { type, reason, remarks, lat, lng } = await req.json();
+//     const now = new Date();
+//     const { start, end } = getDayRange(now);
+
+//     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+//     const deviceInfo = req.headers.get("user-agent") || "unknown device";
+
+//     // Fetch Clerk user details
+//     let employeeName = "Unknown";
+//     try {
+//       const clerkUser = await users.getUser(userId);
+//       employeeName =
+//         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+//         clerkUser.username ||
+//         clerkUser.emailAddresses[0]?.emailAddress ||
+//         clerkUser.id;
+//     } catch (err) {
+//       console.error("Clerk fetch error:", err);
+//     }
+
+//     // Location check
+//     let distance: number | null = null;
+//     let verified = false;
+//     if (lat && lng) {
+//       distance = getDistance(lat, lng, TISH_LAT, TISH_LNG);
+//       verified = distance <= MAX_DISTANCE_METERS;
+//     }
+
+//     let attendance;
+
+//     // ✅ Fetch today’s record if exists
+//     const todayRecord = await prisma.attendance.findFirst({
+//       where: { userId, date: start },
+//       orderBy: { createdAt: "desc" },
+//     });
+
+//     // Prevent new attendance if already marked today
+//     if (todayRecord) {
+//       return NextResponse.json(
+//         { error: "Attendance already marked for today" },
+//         { status: 400 }
+//       );
+//     }
+
+//     if (type === "checkIn") {
+//       const hour = now.getHours();
+
+//       if (hour < OFFICE_START || hour > OFFICE_END) {
+//         return NextResponse.json(
+//           { error: "Check-in allowed only between 7 AM and 7 PM" },
+//           { status: 400 }
+//         );
+//       }
+
+//       let status = !verified ? "Unverified" : "On Time";
+//       if (hour > 10 && verified) status = "Late";
+//       if (hour > 10 && !reason && verified) {
+//         return NextResponse.json(
+//           { error: "Late check-in requires a reason" },
+//           { status: 400 }
+//         );
+//       }
+
+//       attendance = await prisma.attendance.create({
+//         data: {
+//           userId,
+//           employeeName,
+//           date: start, // normalized day
+//           checkIn: now,
+//           checkInReason: reason || null,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     // Optional: Support check-out if needed (not allowed if strict 1 attendance per day)
+//     if (type === "checkOut") {
+//       return NextResponse.json(
+//         { error: "Check-out not allowed. Attendance is already finalized for today." },
+//         { status: 400 }
+//       );
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err: any) {
+//     console.error("Attendance error:", err);
+//     return NextResponse.json(
+//       { error: "Something went wrong", details: err.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+// // src/app/api/attendance/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { users } from "@clerk/clerk-sdk-node";
+
+// const TISH_LAT = 28.5163558;
+// const TISH_LNG = 77.1035919;
+// const MAX_DISTANCE_METERS = 100;
+// const OFFICE_START = 7; // 7 AM
+// const OFFICE_END = 19; // 7 PM
+
+// function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+//   const R = 6371e3;
+//   const toRad = (x: number) => (x * Math.PI) / 180;
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
+
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
+
+// function getDayRange(date: Date) {
+//   const start = new Date(date);
+//   start.setHours(0, 0, 0, 0);
+
+//   const end = new Date(date);
+//   end.setHours(23, 59, 59, 999);
+
+//   return { start, end };
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { type, reason, remarks, lat, lng } = await req.json();
+//     const now = new Date();
+//     const { start, end } = getDayRange(now);
+
+//     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+//     const deviceInfo = req.headers.get("user-agent") || "unknown device";
+
+//     // Fetch Clerk user details
+//     let employeeName = "Unknown";
+//     try {
+//       const clerkUser = await users.getUser(userId);
+//       employeeName =
+//         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+//         clerkUser.username ||
+//         clerkUser.emailAddresses[0]?.emailAddress ||
+//         clerkUser.id;
+//     } catch (err) {
+//       console.error("Clerk fetch error:", err);
+//     }
+
+//     // Location check
+//     let distance: number | null = null;
+//     let verified = false;
+//     if (lat && lng) {
+//       distance = getDistance(lat, lng, TISH_LAT, TISH_LNG);
+//       verified = distance <= MAX_DISTANCE_METERS;
+//     }
+
+//     // Fetch today's attendance if exists
+//     let todayRecord = await prisma.attendance.findFirst({
+//       where: { userId, date: start },
+//       orderBy: { createdAt: "desc" },
+//     });
+
+//     let attendance;
+
+//     if (type === "checkIn") {
+//       if (todayRecord?.checkIn) {
+//         return NextResponse.json({ error: "Already checked in today" }, { status: 400 });
+//       }
+
+//       const hour = now.getHours();
+//       if (hour < OFFICE_START || hour > OFFICE_END) {
+//         return NextResponse.json(
+//           { error: "Check-in allowed only between 7 AM and 7 PM" },
+//           { status: 400 }
+//         );
+//       }
+
+//       let status = !verified ? "Unverified" : "On Time";
+//       if (hour > 10 && verified) status = "Late";
+//       if (hour > 10 && !reason && verified) {
+//         return NextResponse.json(
+//           { error: "Late check-in requires a reason" },
+//           { status: 400 }
+//         );
+//       }
+
+//       attendance = await prisma.attendance.create({
+//         data: {
+//           userId,
+//           employeeName,
+//           date: start,
+//           checkIn: now,
+//           checkInReason: reason || null,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     if (type === "checkOut") {
+//       if (!todayRecord?.checkIn) {
+//         return NextResponse.json({ error: "No check-in found for today" }, { status: 400 });
+//       }
+//       if (todayRecord.checkOut) {
+//         return NextResponse.json({ error: "Already checked out today" }, { status: 400 });
+//       }
+
+//       const checkInTime = todayRecord.checkIn!;
+//       const checkOutTime = now;
+
+//       // Calculate working hours
+//       const diffMs = checkOutTime.getTime() - checkInTime.getTime();
+//       const workingHours = diffMs / (1000 * 60 * 60);
+//       const overtimeHours = Math.max(0, workingHours - 8);
+
+//       // Update record
+//       attendance = await prisma.attendance.update({
+//         where: { id: todayRecord.id },
+//         data: {
+//           checkOut: checkOutTime,
+//           checkOutReason: reason || null,
+//           workingHours,
+//           overtimeHours,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err: any) {
+//     console.error("Attendance error:", err);
+//     return NextResponse.json(
+//       { error: "Something went wrong", details: err.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+// // src/app/api/attendance/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import { users } from "@clerk/clerk-sdk-node";
+
+// const TISH_LAT = 28.5163558;
+// const TISH_LNG = 77.1035919;
+// const MAX_DISTANCE_METERS = 100;
+// const OFFICE_START = 7; // 7 AM
+// const OFFICE_END = 19; // 7 PM
+
+// // Calculate distance in meters between two coordinates
+// function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+//   const R = 6371e3;
+//   const toRad = (x: number) => (x * Math.PI) / 180;
+//   const dLat = toRad(lat2 - lat1);
+//   const dLng = toRad(lng2 - lng1);
+
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   return R * c;
+// }
+
+// // Get local day range (start and end of today in local time)
+// function getLocalDayRange(date: Date) {
+//   const start = new Date(date);
+//   start.setHours(0, 0, 0, 0);
+
+//   const end = new Date(date);
+//   end.setHours(23, 59, 59, 999);
+
+//   return { start, end };
+// }
+
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId)
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { type, reason, remarks, lat, lng } = await req.json();
+//     const now = new Date();
+//     const { start: localStart, end: localEnd } = getLocalDayRange(now);
+
+//     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+//     const deviceInfo = req.headers.get("user-agent") || "unknown device";
+
+//     // Fetch Clerk user details
+//     let employeeName = "Unknown";
+//     try {
+//       const clerkUser = await users.getUser(userId);
+//       employeeName =
+//         `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+//         clerkUser.username ||
+//         clerkUser.emailAddresses[0]?.emailAddress ||
+//         clerkUser.id;
+//     } catch (err) {
+//       console.error("Clerk fetch error:", err);
+//     }
+
+//     // Location check
+//     let distance: number | null = null;
+//     let verified = false;
+//     if (lat && lng) {
+//       distance = getDistance(lat, lng, TISH_LAT, TISH_LNG);
+//       verified = distance <= MAX_DISTANCE_METERS;
+//     }
+
+//     // Fetch today's attendance
+//     let todayRecord = await prisma.attendance.findFirst({
+//       where: { userId, date: { gte: localStart, lte: localEnd } },
+//       orderBy: { createdAt: "desc" },
+//     });
+
+//     let attendance;
+
+//     // -------------------- Check-in --------------------
+//     if (type === "checkIn") {
+//       if (todayRecord?.checkIn) {
+//         return NextResponse.json({ error: "Already checked in today" }, { status: 400 });
+//       }
+
+//       const hour = now.getHours();
+//       if (hour < OFFICE_START || hour > OFFICE_END) {
+//         return NextResponse.json(
+//           { error: "Check-in allowed only between 7 AM and 7 PM" },
+//           { status: 400 }
+//         );
+//       }
+
+//       let status = !verified ? "Unverified" : "On Time";
+//       if (hour > 10 && verified) status = "Late";
+//       if (hour > 10 && !reason && verified) {
+//         return NextResponse.json(
+//           { error: "Late check-in requires a reason" },
+//           { status: 400 }
+//         );
+//       }
+
+//       attendance = await prisma.attendance.create({
+//         data: {
+//           userId,
+//           employeeName,
+//           date: localStart, // ✅ store local day
+//           checkIn: now,
+//           checkInReason: reason || null,
+//           status,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     // -------------------- Check-out --------------------
+//     if (type === "checkOut") {
+//       if (!todayRecord?.checkIn) {
+//         return NextResponse.json({ error: "No check-in found for today" }, { status: 400 });
+//       }
+//       if (todayRecord.checkOut) {
+//         return NextResponse.json({ error: "Already checked out today" }, { status: 400 });
+//       }
+
+//       const checkInTime = new Date(todayRecord.checkIn);
+//       const checkOutTime = now;
+
+//       // Calculate working hours
+//       const diffMs = checkOutTime.getTime() - checkInTime.getTime();
+//       const workingHours = diffMs / (1000 * 60 * 60); // in hours
+//       const overtimeHours = Math.max(0, workingHours - 8);
+
+//       // Update record
+//       attendance = await prisma.attendance.update({
+//         where: { id: todayRecord.id },
+//         data: {
+//           checkOut: checkOutTime,
+//           checkOutReason: reason || null,
+//           workingHours,
+//           overtimeHours,
+//           verified,
+//           location: { ip, lat, lng, distance },
+//           deviceInfo,
+//           remarks: remarks || null,
+//         },
+//       });
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err: any) {
+//     console.error("Attendance error:", err);
+//     return NextResponse.json(
+//       { error: "Something went wrong", details: err.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
@@ -992,8 +2187,8 @@ import { users } from "@clerk/clerk-sdk-node";
 const TISH_LAT = 28.5163558;
 const TISH_LNG = 77.1035919;
 const MAX_DISTANCE_METERS = 100;
-const OFFICE_START = 10;
-const OFFICE_END = 19;
+const OFFICE_START = 7; // 7 AM
+const OFFICE_END = 19; // 7 PM
 
 function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371e3;
@@ -1008,19 +2203,31 @@ function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * c;
 }
 
+// ✅ Convert local day to UTC for storing in Mongo
+function getLocalDateUTC(date: Date) {
+  const localDate = new Date(date);
+  localDate.setHours(0, 0, 0, 0); // local midnight
+  const offset = localDate.getTimezoneOffset(); // minutes
+  localDate.setMinutes(localDate.getMinutes() - offset); // convert to UTC midnight
+  return localDate;
+}
+
 export async function POST(req: Request) {
   try {
     const { userId } = getAuth(req as any);
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { type, reason, remarks, lat, lng } = await req.json();
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const todayStart = getLocalDateUTC(now);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setUTCHours(23, 59, 59, 999);
 
     const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
     const deviceInfo = req.headers.get("user-agent") || "unknown device";
 
-    // ✅ Fetch Clerk user details (like your tish code)
     let employeeName = "Unknown";
     try {
       const clerkUser = await users.getUser(userId);
@@ -1033,17 +2240,6 @@ export async function POST(req: Request) {
       console.error("Clerk fetch error:", err);
     }
 
-    // Find or create today's attendance
-    let attendance = await prisma.attendance.findFirst({
-      where: { userId, date: today },
-    });
-
-    if (!attendance) {
-      attendance = await prisma.attendance.create({
-        data: { userId, employeeName, date: today },
-      });
-    }
-
     let distance: number | null = null;
     let verified = false;
     if (lat && lng) {
@@ -1051,20 +2247,40 @@ export async function POST(req: Request) {
       verified = distance <= MAX_DISTANCE_METERS;
     }
 
-    let status = attendance.status;
+    let todayRecord = await prisma.attendance.findFirst({
+      where: { userId, date: { gte: todayStart, lte: todayEnd } },
+      orderBy: { createdAt: "desc" },
+    });
+
+    let attendance;
 
     if (type === "checkIn") {
-      const hour = now.getHours();
-      status = !verified ? "Unverified" : hour >= OFFICE_START ? "Late" : "On Time";
-
-      if (hour >= OFFICE_START && !reason && verified) {
-        return NextResponse.json({ error: "Late check-in requires a reason" }, { status: 400 });
+      if (todayRecord?.checkIn) {
+        return NextResponse.json({ error: "Already checked in today" }, { status: 400 });
       }
 
-      attendance = await prisma.attendance.update({
-        where: { id: attendance.id },
+      const hour = now.getHours();
+      if (hour < OFFICE_START || hour > OFFICE_END) {
+        return NextResponse.json(
+          { error: "Check-in allowed only between 7 AM and 7 PM" },
+          { status: 400 }
+        );
+      }
+
+      let status = !verified ? "Unverified" : "On Time";
+      if (hour > 10 && verified) status = "Late";
+      if (hour > 10 && !reason && verified) {
+        return NextResponse.json(
+          { error: "Late check-in requires a reason" },
+          { status: 400 }
+        );
+      }
+
+      attendance = await prisma.attendance.create({
         data: {
-          employeeName, // ✅ save name
+          userId,
+          employeeName,
+          date: todayStart,
           checkIn: now,
           checkInReason: reason || null,
           status,
@@ -1077,43 +2293,41 @@ export async function POST(req: Request) {
     }
 
     if (type === "checkOut") {
-      const hour = now.getHours();
-      let overtime = 0;
-      let workingHours = 0;
-      status = !verified ? "Unverified" : attendance.status;
-
-      if (hour < OFFICE_END && !reason && verified) {
-        return NextResponse.json({ error: "Early check-out requires a reason" }, { status: 400 });
+      if (!todayRecord?.checkIn) {
+        return NextResponse.json({ error: "No check-in found for today" }, { status: 400 });
+      }
+      if (todayRecord.checkOut) {
+        return NextResponse.json({ error: "Already checked out today" }, { status: 400 });
       }
 
-      if (attendance.checkIn) {
-        workingHours = (now.getTime() - attendance.checkIn.getTime()) / (1000 * 60 * 60);
-        if (hour > OFFICE_END) overtime = hour - OFFICE_END;
-        if (hour < OFFICE_END && verified) status = "Early Leave";
-        else if (status !== "Late" && verified) status = "On Time";
-      }
+      const checkInTime = new Date(todayRecord.checkIn);
+      const checkOutTime = now;
+
+      const diffMs = checkOutTime.getTime() - checkInTime.getTime();
+      const workingHours = diffMs / (1000 * 60 * 60);
+      const overtimeHours = Math.max(0, workingHours - 8);
 
       attendance = await prisma.attendance.update({
-        where: { id: attendance.id },
+        where: { id: todayRecord.id },
         data: {
-          employeeName, // ✅ save name
-          checkOut: now,
+          checkOut: checkOutTime,
           checkOutReason: reason || null,
           workingHours,
-          overtimeHours: overtime,
-          status,
+          overtimeHours,
           verified,
           location: { ip, lat, lng, distance },
           deviceInfo,
-          
           remarks: remarks || null,
         },
       });
     }
 
     return NextResponse.json({ success: true, attendance });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Attendance error:", err);
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Something went wrong", details: err.message },
+      { status: 500 }
+    );
   }
 }
