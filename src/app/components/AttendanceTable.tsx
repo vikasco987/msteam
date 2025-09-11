@@ -1,8 +1,428 @@
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import MonthlyAttendanceTable from "./MonthlyAttendanceTable";
+// import AttendanceAnalyticsTable from "./AttendanceAnalyticsTable"; // ✅ new import
+
+// interface Attendance {
+//   id: string;
+//   userId: string;
+//   employeeName?: string;
+//   faceImage?: string;
+//   location?: string;
+//   deviceInfo?: string;
+//   checkIn?: string;
+//   checkOut?: string;
+//   checkInReason?: string;
+//   checkOutReason?: string;
+//   date: string;
+//   status?: string;
+//   verified?: boolean;
+//   workingHours?: number;
+//   overtimeHours?: number;
+//   remarks?: string;
+//   createdAt: string;
+//   updatedAt: string;
+// }
+
+// // -------------------- Helpers --------------------
+// function formatDate(dateString?: string): string {
+//   if (!dateString) return "-";
+//   try {
+//     const date = new Date(dateString);
+//     const weekday = date.toLocaleString("en-US", { weekday: "short" });
+//     const day = date.getDate();
+//     const month = date.toLocaleString("en-US", { month: "short" });
+//     const year = date.getFullYear();
+//     return `${weekday}, ${day} ${month}, ${year}`;
+//   } catch {
+//     return dateString;
+//   }
+// }
+
+// function formatTime(dateString?: string): string {
+//   if (!dateString) return "-";
+//   try {
+//     const date = new Date(dateString);
+//     let hour = date.getHours();
+//     const minutes = date.getMinutes().toString().padStart(2, "0");
+//     const suffix = hour >= 12 ? "PM" : "AM";
+//     hour = hour % 12 || 12;
+//     return `${hour}:${minutes} ${suffix}`;
+//   } catch {
+//     return dateString;
+//   }
+// }
+
+// function formatHours(minutes?: number): string {
+//   if (minutes == null) return "-";
+//   const hrs = Math.floor(minutes / 60);
+//   const mins = minutes % 60;
+//   if (hrs && mins) return `${hrs} hr ${mins} min`;
+//   if (hrs) return `${hrs} hr`;
+//   if (mins) return `${mins} min`;
+//   return "0 min";
+// }
+
+// // -------------------- Component --------------------
+// export default function AttendanceTable() {
+//   const [data, setData] = useState<Attendance[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [view, setView] = useState<"daily" | "monthly" | "analytics">("daily");
+//   const [selectedDate, setSelectedDate] = useState<string>(
+//     new Date().toISOString().split("T")[0] // ✅ default today
+//   );
+
+//   useEffect(() => {
+//     if (view !== "daily") return; // only fetch for daily view
+//     const fetchAttendance = async () => {
+//       setLoading(true);
+//       try {
+//         const res = await fetch(`/api/attendance/list?date=${selectedDate}`);
+//         const json = await res.json();
+//         if (Array.isArray(json)) {
+//           setData(json);
+//         } else {
+//           setData([]);
+//         }
+//       } catch (err) {
+//         console.error("Failed to load attendance:", err);
+//         setData([]);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchAttendance();
+//   }, [selectedDate, view]);
+
+//   if (loading && view === "daily") return <p className="p-4">Loading attendance...</p>;
+
+//   return (
+//     <div className="p-4 space-y-4">
+//       {/* Controls */}
+//       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+//         {/* Date Picker */}
+//         {view === "daily" && (
+//           <input
+//             type="date"
+//             value={selectedDate}
+//             onChange={(e) => setSelectedDate(e.target.value)}
+//             className="px-3 py-2 border rounded text-sm"
+//           />
+//         )}
+
+//         {/* Toggle Buttons */}
+//         <div className="flex gap-2">
+//           <button
+//             onClick={() => setView("daily")}
+//             className={`px-4 py-2 text-sm rounded ${
+//               view === "daily" ? "bg-blue-600 text-white" : "bg-gray-200"
+//             }`}
+//           >
+//             Daily View
+//           </button>
+//           <button
+//             onClick={() => setView("monthly")}
+//             className={`px-4 py-2 text-sm rounded ${
+//               view === "monthly" ? "bg-blue-600 text-white" : "bg-gray-200"
+//             }`}
+//           >
+//             Monthly View
+//           </button>
+//           <button
+//             onClick={() => setView("analytics")}
+//             className={`px-4 py-2 text-sm rounded ${
+//               view === "analytics" ? "bg-blue-600 text-white" : "bg-gray-200"
+//             }`}
+//           >
+//             Analytics
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Conditional Rendering */}
+//       {view === "monthly" ? (
+//         <MonthlyAttendanceTable month={selectedDate.slice(0, 7)} />
+//       ) : view === "analytics" ? (
+//         <AttendanceAnalyticsTable month={selectedDate.slice(0, 7)} />
+//       ) : (
+//         <div className="overflow-x-auto">
+//           <table className="min-w-full border border-gray-300 text-sm">
+//             <thead className="bg-gray-100">
+//               <tr>
+//                 <th className="p-2 border">Employee</th>
+//                 <th className="p-2 border">Date</th>
+//                 <th className="p-2 border">Check In</th>
+//                 <th className="p-2 border">Check Out</th>
+//                 <th className="p-2 border">Reason</th>
+//                 <th className="p-2 border">Status</th>
+//                 <th className="p-2 border">Working Hours</th>
+//                 <th className="p-2 border">Overtime</th>
+//                 <th className="p-2 border">Remarks</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {data.length === 0 ? (
+//                 <tr>
+//                   <td colSpan={9} className="p-4 text-center text-gray-500">
+//                     No attendance records found for {selectedDate}.
+//                   </td>
+//                 </tr>
+//               ) : (
+//                 data.map((row) => (
+//                   <tr key={row.id} className="border-t hover:bg-gray-50">
+//                     <td className="p-2 border">{row.employeeName || row.userId}</td>
+//                     <td className="p-2 border">{formatDate(row.date)}</td>
+//                     <td className="p-2 border">{formatTime(row.checkIn)}</td>
+//                     <td className="p-2 border">{formatTime(row.checkOut)}</td>
+//                     <td className="p-2 border">
+//                       {row.checkInReason || row.checkOutReason || "-"}
+//                     </td>
+//                     <td className="p-2 border">{row.status || "-"}</td>
+//                     <td className="p-2 border">{formatHours(row.workingHours)}</td>
+//                     <td className="p-2 border">{formatHours(row.overtimeHours)}</td>
+//                     <td className="p-2 border">{row.remarks || "-"}</td>
+//                   </tr>
+//                 ))
+//               )}
+//             </tbody>
+//           </table>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import MonthlyAttendanceTable from "./MonthlyAttendanceTable";
+// import AttendanceAnalyticsTable from "./AttendanceAnalyticsTable"; // ✅ new import
+// import { Button } from "@/components/ui/button"; // ✅ using shadcn/ui button (attractive)
+
+// interface Attendance {
+//   id: string;
+//   userId: string;
+//   employeeName?: string;
+//   faceImage?: string;
+//   location?: string;
+//   deviceInfo?: string;
+//   checkIn?: string;
+//   checkOut?: string;
+//   checkInReason?: string;
+//   checkOutReason?: string;
+//   date: string;
+//   status?: string;
+//   verified?: boolean;
+//   workingHours?: number;
+//   overtimeHours?: number;
+//   remarks?: string;
+//   createdAt: string;
+//   updatedAt: string;
+// }
+
+// // -------------------- Helpers --------------------
+// function formatDate(dateString?: string): string {
+//   if (!dateString) return "-";
+//   try {
+//     const date = new Date(dateString);
+//     const weekday = date.toLocaleString("en-US", { weekday: "short" });
+//     const day = date.getDate();
+//     const month = date.toLocaleString("en-US", { month: "short" });
+//     const year = date.getFullYear();
+//     return `${weekday}, ${day} ${month}, ${year}`;
+//   } catch {
+//     return dateString;
+//   }
+// }
+
+// function formatTime(dateString?: string): string {
+//   if (!dateString) return "-";
+//   try {
+//     const date = new Date(dateString);
+//     let hour = date.getHours();
+//     const minutes = date.getMinutes().toString().padStart(2, "0");
+//     const suffix = hour >= 12 ? "PM" : "AM";
+//     hour = hour % 12 || 12;
+//     return `${hour}:${minutes} ${suffix}`;
+//   } catch {
+//     return dateString;
+//   }
+// }
+
+// function formatHours(minutes?: number): string {
+//   if (minutes == null) return "-";
+//   const hrs = Math.floor(minutes / 60);
+//   const mins = minutes % 60;
+//   if (hrs && mins) return `${hrs} hr ${mins} min`;
+//   if (hrs) return `${hrs} hr`;
+//   if (mins) return `${mins} min`;
+//   return "0 min";
+// }
+
+// // -------------------- Component --------------------
+// export default function AttendanceTable() {
+//   const [data, setData] = useState<Attendance[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [view, setView] = useState<"daily" | "monthly" | "analytics">("daily");
+//   const [selectedDate, setSelectedDate] = useState<string>(
+//     new Date().toISOString().split("T")[0] // ✅ default today
+//   );
+
+//   useEffect(() => {
+//     if (view !== "daily") return; // only fetch for daily view
+//     const fetchAttendance = async () => {
+//       setLoading(true);
+//       try {
+//         const res = await fetch(`/api/attendance/list?date=${selectedDate}`);
+//         const json = await res.json();
+//         if (Array.isArray(json)) {
+//           setData(json);
+//         } else {
+//           setData([]);
+//         }
+//       } catch (err) {
+//         console.error("Failed to load attendance:", err);
+//         setData([]);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchAttendance();
+//   }, [selectedDate, view]);
+
+//   if (loading && view === "daily") return <p className="p-4">Loading attendance...</p>;
+
+//   return (
+//     <div className="p-4 space-y-4">
+//       {/* 🔹 Extra Control Button Above Table */}
+//       <div className="flex justify-end">
+//         <Button
+//           variant="outline"
+//           onClick={() => alert("Export feature coming soon 🚀")}
+//         >
+//           Export Attendance
+//         </Button>
+//       </div>
+
+//       {/* Controls */}
+//       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+//         {/* Date Picker */}
+//         {view === "daily" && (
+//           <input
+//             type="date"
+//             value={selectedDate}
+//             onChange={(e) => setSelectedDate(e.target.value)}
+//             className="px-3 py-2 border rounded text-sm"
+//           />
+//         )}
+
+//         {/* Toggle Buttons */}
+//         <div className="flex gap-2">
+//           <button
+//             onClick={() => setView("daily")}
+//             className={`px-4 py-2 text-sm rounded ${
+//               view === "daily" ? "bg-blue-600 text-white" : "bg-gray-200"
+//             }`}
+//           >
+//             Daily View
+//           </button>
+//           <button
+//             onClick={() => setView("monthly")}
+//             className={`px-4 py-2 text-sm rounded ${
+//               view === "monthly" ? "bg-blue-600 text-white" : "bg-gray-200"
+//             }`}
+//           >
+//             Monthly View
+//           </button>
+//           <button
+//             onClick={() => setView("analytics")}
+//             className={`px-4 py-2 text-sm rounded ${
+//               view === "analytics" ? "bg-blue-600 text-white" : "bg-gray-200"
+//             }`}
+//           >
+//             Analytics
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Conditional Rendering */}
+//       {view === "monthly" ? (
+//         <MonthlyAttendanceTable month={selectedDate.slice(0, 7)} />
+//       ) : view === "analytics" ? (
+//         <AttendanceAnalyticsTable month={selectedDate.slice(0, 7)} />
+//       ) : (
+//         <div className="overflow-x-auto">
+//           <table className="min-w-full border border-gray-300 text-sm">
+//             <thead className="bg-gray-100">
+//               <tr>
+//                 <th className="p-2 border">Employee</th>
+//                 <th className="p-2 border">Date</th>
+//                 <th className="p-2 border">Check In</th>
+//                 <th className="p-2 border">Check Out</th>
+//                 <th className="p-2 border">Reason</th>
+//                 <th className="p-2 border">Status</th>
+//                 <th className="p-2 border">Working Hours</th>
+//                 <th className="p-2 border">Overtime</th>
+//                 <th className="p-2 border">Remarks</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {data.length === 0 ? (
+//                 <tr>
+//                   <td colSpan={9} className="p-4 text-center text-gray-500">
+//                     No attendance records found for {selectedDate}.
+//                   </td>
+//                 </tr>
+//               ) : (
+//                 data.map((row) => (
+//                   <tr key={row.id} className="border-t hover:bg-gray-50">
+//                     <td className="p-2 border">{row.employeeName || row.userId}</td>
+//                     <td className="p-2 border">{formatDate(row.date)}</td>
+//                     <td className="p-2 border">{formatTime(row.checkIn)}</td>
+//                     <td className="p-2 border">{formatTime(row.checkOut)}</td>
+//                     <td className="p-2 border">
+//                       {row.checkInReason || row.checkOutReason || "-"}
+//                     </td>
+//                     <td className="p-2 border">{row.status || "-"}</td>
+//                     <td className="p-2 border">{formatHours(row.workingHours)}</td>
+//                     <td className="p-2 border">{formatHours(row.overtimeHours)}</td>
+//                     <td className="p-2 border">{row.remarks || "-"}</td>
+//                   </tr>
+//                 ))
+//               )}
+//             </tbody>
+//           </table>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useEffect, useState } from "react";
 import MonthlyAttendanceTable from "./MonthlyAttendanceTable";
-import AttendanceAnalyticsTable from "./AttendanceAnalyticsTable"; // ✅ new import
+import AttendanceAnalyticsTable from "./AttendanceAnalyticsTable";
+import AttendancePivotTable from "./AttendancePivotTable"; // ✅ Pivot view
+import { Button } from "@/components/ui/button";
 
 interface Attendance {
   id: string;
@@ -68,9 +488,9 @@ function formatHours(minutes?: number): string {
 export default function AttendanceTable() {
   const [data, setData] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"daily" | "monthly" | "analytics">("daily");
+  const [view, setView] = useState<"daily" | "monthly" | "analytics" | "pivot">("daily");
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0] // ✅ default today
+    new Date().toISOString().split("T")[0]
   );
 
   useEffect(() => {
@@ -100,6 +520,16 @@ export default function AttendanceTable() {
 
   return (
     <div className="p-4 space-y-4">
+      {/* 🔹 Extra Control Button Above Table */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          onClick={() => alert("Export feature coming soon 🚀")}
+        >
+          Export Attendance
+        </Button>
+      </div>
+
       {/* Controls */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         {/* Date Picker */}
@@ -138,6 +568,14 @@ export default function AttendanceTable() {
           >
             Analytics
           </button>
+          <button
+            onClick={() => setView("pivot")}
+            className={`px-4 py-2 text-sm rounded ${
+              view === "pivot" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+          >
+            Pivot View
+          </button>
         </div>
       </div>
 
@@ -146,6 +584,8 @@ export default function AttendanceTable() {
         <MonthlyAttendanceTable month={selectedDate.slice(0, 7)} />
       ) : view === "analytics" ? (
         <AttendanceAnalyticsTable month={selectedDate.slice(0, 7)} />
+      ) : view === "pivot" ? (
+        <AttendancePivotTable month={selectedDate.slice(0, 7)} />
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-300 text-sm">
