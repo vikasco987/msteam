@@ -126,54 +126,118 @@
 
 
 
+// // src/app/api/attendance/list/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../../lib/prisma";
+// import { clerkClient } from "@clerk/clerk-sdk-node";
+
+// export async function GET() {
+//   try {
+//     const records = await prisma.attendance.findMany({
+//       orderBy: { createdAt: "desc" },
+//     });
+
+//     if (records.length === 0) {
+//       return NextResponse.json([]);
+//     }
+
+//     // Collect unique userIds missing employeeName
+//     const missingIds = records
+//       .filter(r => !r.employeeName)
+//       .map(r => r.userId);
+//     const uniqueIds = Array.from(new Set(missingIds));
+
+//     const userMap = new Map<string, string>();
+
+//     for (const id of uniqueIds) {
+//       try {
+//         const user = await clerkClient.users.getUser(id);
+
+//         const fullName =
+//           `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+//           user.username ||
+//           "Unknown";
+
+//         userMap.set(id, fullName);
+//       } catch (err) {
+//         console.error(`⚠️ Failed to fetch user ${id}:`, err);
+//         userMap.set(id, "Unknown");
+//       }
+//     }
+
+//     // Enrich only if employeeName missing
+//     const enriched = records.map(r => ({
+//       ...r,
+//       employeeName: r.employeeName || userMap.get(r.userId) || "Unknown",
+//     }));
+
+//     return NextResponse.json(enriched);
+//   } catch (error) {
+//     console.error("💥 Attendance fetch failed:", error);
+//     return NextResponse.json({ error: "Failed to fetch attendance" }, { status: 500 });
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // src/app/api/attendance/list/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
-import { clerkClient } from "@clerk/clerk-sdk-node";
+import { auth } from "@clerk/nextjs/server";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get("date");   // ✅ YYYY-MM-DD
+    const month = searchParams.get("month"); // ✅ YYYY-MM
+
+    let where: any = {};
+
+    // ---------------- Date Filter ----------------
+    if (date) {
+      const startDate = new Date(`${date}T00:00:00.000Z`);
+      const endDate = new Date(`${date}T23:59:59.999Z`);
+
+      where.date = { gte: startDate, lte: endDate };
+    }
+
+    // ---------------- Month Filter ----------------
+    if (month) {
+      const startDate = new Date(`${month}-01T00:00:00.000Z`);
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      where.date = { gte: startDate, lt: endDate };
+    }
+
+    // ---------------- Query Attendance ----------------
     const records = await prisma.attendance.findMany({
-      orderBy: { createdAt: "desc" },
+      where,
+      orderBy: { date: "desc" },
     });
 
-    if (records.length === 0) {
-      return NextResponse.json([]);
-    }
-
-    // Collect unique userIds missing employeeName
-    const missingIds = records
-      .filter(r => !r.employeeName)
-      .map(r => r.userId);
-    const uniqueIds = Array.from(new Set(missingIds));
-
-    const userMap = new Map<string, string>();
-
-    for (const id of uniqueIds) {
-      try {
-        const user = await clerkClient.users.getUser(id);
-
-        const fullName =
-          `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-          user.username ||
-          "Unknown";
-
-        userMap.set(id, fullName);
-      } catch (err) {
-        console.error(`⚠️ Failed to fetch user ${id}:`, err);
-        userMap.set(id, "Unknown");
-      }
-    }
-
-    // Enrich only if employeeName missing
-    const enriched = records.map(r => ({
-      ...r,
-      employeeName: r.employeeName || userMap.get(r.userId) || "Unknown",
-    }));
-
-    return NextResponse.json(enriched);
-  } catch (error) {
-    console.error("💥 Attendance fetch failed:", error);
-    return NextResponse.json({ error: "Failed to fetch attendance" }, { status: 500 });
+    return NextResponse.json(records);
+  } catch (e: any) {
+    console.error("💥 Attendance fetch error:", e);
+    return NextResponse.json(
+      { error: "Internal Error", details: e.message },
+      { status: 500 }
+    );
   }
 }

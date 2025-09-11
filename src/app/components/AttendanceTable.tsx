@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import MonthlyAttendanceTable from "./MonthlyAttendanceTable"; // ✅ import monthly view
+import MonthlyAttendanceTable from "./MonthlyAttendanceTable";
 
 interface Attendance {
   id: string;
@@ -67,12 +67,16 @@ function formatHours(minutes?: number): string {
 export default function AttendanceTable() {
   const [data, setData] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showMonthly, setShowMonthly] = useState(false); // ✅ toggle state
+  const [showMonthly, setShowMonthly] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0] // ✅ default today
+  );
 
   useEffect(() => {
     const fetchAttendance = async () => {
+      setLoading(true);
       try {
-        const res = await fetch("/api/attendance/list");
+        const res = await fetch(`/api/attendance/list?date=${selectedDate}`);
         const json = await res.json();
         if (Array.isArray(json)) {
           setData(json);
@@ -88,23 +92,34 @@ export default function AttendanceTable() {
     };
 
     fetchAttendance();
-  }, []);
+  }, [selectedDate]);
 
   if (loading) return <p className="p-4">Loading attendance...</p>;
 
   return (
     <div className="p-4 space-y-4">
-      {/* Toggle Button */}
-      <button
-        onClick={() => setShowMonthly(!showMonthly)}
-        className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-      >
-        {showMonthly ? "Hide Monthly View" : "Show Monthly View"}
-      </button>
+      {/* Controls */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        {/* Date Picker */}
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="px-3 py-2 border rounded text-sm"
+        />
+
+        {/* Toggle Button */}
+        <button
+          onClick={() => setShowMonthly(!showMonthly)}
+          className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+        >
+          {showMonthly ? "Hide Monthly View" : "Show Monthly View"}
+        </button>
+      </div>
 
       {/* Conditional Rendering */}
       {showMonthly ? (
-        <MonthlyAttendanceTable month="2025-09" /> // ✅ pass desired month
+        <MonthlyAttendanceTable month={selectedDate.slice(0, 7)} />
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-300 text-sm">
@@ -125,7 +140,7 @@ export default function AttendanceTable() {
               {data.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="p-4 text-center text-gray-500">
-                    No attendance records found.
+                    No attendance records found for {selectedDate}.
                   </td>
                 </tr>
               ) : (
