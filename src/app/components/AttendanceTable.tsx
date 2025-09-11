@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import MonthlyAttendanceTable from "./MonthlyAttendanceTable";
+import AttendanceAnalyticsTable from "./AttendanceAnalyticsTable"; // ✅ new import
 
 interface Attendance {
   id: string;
@@ -67,12 +68,13 @@ function formatHours(minutes?: number): string {
 export default function AttendanceTable() {
   const [data, setData] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showMonthly, setShowMonthly] = useState(false);
+  const [view, setView] = useState<"daily" | "monthly" | "analytics">("daily");
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0] // ✅ default today
   );
 
   useEffect(() => {
+    if (view !== "daily") return; // only fetch for daily view
     const fetchAttendance = async () => {
       setLoading(true);
       try {
@@ -92,34 +94,58 @@ export default function AttendanceTable() {
     };
 
     fetchAttendance();
-  }, [selectedDate]);
+  }, [selectedDate, view]);
 
-  if (loading) return <p className="p-4">Loading attendance...</p>;
+  if (loading && view === "daily") return <p className="p-4">Loading attendance...</p>;
 
   return (
     <div className="p-4 space-y-4">
       {/* Controls */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         {/* Date Picker */}
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="px-3 py-2 border rounded text-sm"
-        />
+        {view === "daily" && (
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-2 border rounded text-sm"
+          />
+        )}
 
-        {/* Toggle Button */}
-        <button
-          onClick={() => setShowMonthly(!showMonthly)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-        >
-          {showMonthly ? "Hide Monthly View" : "Show Monthly View"}
-        </button>
+        {/* Toggle Buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView("daily")}
+            className={`px-4 py-2 text-sm rounded ${
+              view === "daily" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+          >
+            Daily View
+          </button>
+          <button
+            onClick={() => setView("monthly")}
+            className={`px-4 py-2 text-sm rounded ${
+              view === "monthly" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+          >
+            Monthly View
+          </button>
+          <button
+            onClick={() => setView("analytics")}
+            className={`px-4 py-2 text-sm rounded ${
+              view === "analytics" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+          >
+            Analytics
+          </button>
+        </div>
       </div>
 
       {/* Conditional Rendering */}
-      {showMonthly ? (
+      {view === "monthly" ? (
         <MonthlyAttendanceTable month={selectedDate.slice(0, 7)} />
+      ) : view === "analytics" ? (
+        <AttendanceAnalyticsTable month={selectedDate.slice(0, 7)} />
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full border border-gray-300 text-sm">
