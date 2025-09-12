@@ -1,5 +1,7 @@
 // /api/create-user/route.ts
-import { currentUser } from "@clerk/nextjs";
+// import { currentUser } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs/server";
+
 import {prisma} from "../../../../lib/prisma";
 
 export async function POST(req: Request) {
