@@ -426,6 +426,127 @@
 
 
 
+// // src/app/api/attendance/today/route.ts
+// import { NextResponse } from "next/server";
+// import { prisma } from "../../../../../lib/prisma";
+// import { getAuth } from "@clerk/nextjs/server";
+// import moment from "moment-timezone";
+
+// // 🔹 Helper: Get tomorrow's IST start & end, and current UTC timestamp
+// function getISTDayRange() {
+//   const nowIST = moment().tz("Asia/Kolkata");
+//   const tomorrowIST = nowIST.clone().add(1, "day").startOf("day"); // ✅ IST midnight for tomorrow
+//   const endTomorrowIST = tomorrowIST.clone().endOf("day");
+
+//   return {
+//     startUTC: tomorrowIST.clone().utc().toDate(),      // for DB query
+//     endUTC: endTomorrowIST.clone().utc().toDate(),     // for DB query
+//     dateForDB: tomorrowIST.clone().utc().toDate(),     // store as date in DB
+//     nowUTC: nowIST.clone().utc().toDate(),             // actual current timestamp UTC
+//   };
+// }
+
+// // ✅ Fetch tomorrow's attendance (if needed)
+// export async function GET(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const { startUTC, endUTC } = getISTDayRange();
+
+//     const attendance = await prisma.attendance.findFirst({
+//       where: { userId, date: { gte: startUTC, lte: endUTC } },
+//       orderBy: { createdAt: "desc" },
+//     });
+
+//     if (!attendance) return NextResponse.json({ attendance: null });
+
+//     return NextResponse.json({
+//       attendance: {
+//         ...attendance,
+//         checkIn: attendance.checkIn || null,
+//         checkOut: attendance.checkOut || null,
+//         workingHours: attendance.workingHours || 0,
+//         overtimeHours: attendance.overtimeHours || 0,
+//         status: attendance.status || null,
+//         verified: attendance.verified || false,
+//         remarks: attendance.remarks || null,
+//       },
+//     });
+//   } catch (err: any) {
+//     console.error("Failed to fetch attendance:", err);
+//     return NextResponse.json(
+//       { error: "Failed to fetch attendance", details: err.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// // ✅ Mark attendance (Check-in / Check-out)
+// export async function POST(req: Request) {
+//   try {
+//     const { userId } = getAuth(req as any);
+//     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+//     const nowIST = moment().tz("Asia/Kolkata");
+//     const hour = nowIST.hour();
+
+//     // ⏰ Allow only between 7 AM and 7 PM IST
+//     if (hour < 7 || hour >= 19) {
+//       return NextResponse.json(
+//         { error: "Check-in allowed only between 7 AM and 7 PM" },
+//         { status: 400 }
+//       );
+//     }
+
+//     const { startUTC, endUTC, dateForDB, nowUTC } = getISTDayRange();
+
+//     // Check if user already has an attendance record for tomorrow
+//     let attendance = await prisma.attendance.findFirst({
+//       where: { userId, date: { gte: startUTC, lte: endUTC } },
+//       orderBy: { createdAt: "desc" },
+//     });
+
+//     if (!attendance) {
+//       // ✅ First check-in
+//       attendance = await prisma.attendance.create({
+//         data: {
+//           userId,
+//           date: dateForDB,   // ✅ tomorrow's IST midnight in UTC
+//           checkIn: nowUTC,   // current timestamp in UTC
+//           status: "Present",
+//         },
+//       });
+//     } else if (!attendance.checkOut) {
+//       // ✅ Mark check-out
+//       attendance = await prisma.attendance.update({
+//         where: { id: attendance.id },
+//         data: {
+//           checkOut: nowUTC, // current timestamp in UTC
+//         },
+//       });
+//     }
+
+//     return NextResponse.json({ success: true, attendance });
+//   } catch (err: any) {
+//     console.error("Failed to mark attendance:", err);
+//     return NextResponse.json(
+//       { error: "Failed to mark attendance", details: err.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
 // src/app/api/attendance/today/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
