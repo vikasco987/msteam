@@ -1070,6 +1070,7 @@
 
 
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -1214,22 +1215,22 @@ export default function AttendanceButtons() {
     {
       title: "Hours Worked Today",
       value: hoursWorked,
-      icon: <FaClock className="text-gray-600" />,
+      icon: <FaClock className="text-indigo-600" />,
     },
     {
       title: "Overtime",
       value: overtime,
-      icon: <FaCalendarAlt className="text-gray-600" />,
+      icon: <FaCalendarAlt className="text-pink-600" />,
     },
     {
       title: "Last Check-in",
       value: checkInTime || "N/A",
-      icon: <FaRegCheckCircle className="text-gray-600" />,
+      icon: <FaRegCheckCircle className="text-green-600" />,
     },
     {
       title: "Last Check-out",
       value: checkOutTime || "N/A",
-      icon: <FaRegCheckCircle className="text-gray-600" />,
+      icon: <FaRegCheckCircle className="text-red-600" />,
     },
   ];
 
@@ -1247,29 +1248,31 @@ export default function AttendanceButtons() {
         <source src="/videos/background.mp4" type="video/mp4" />
       </video>
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40"></div>
+      {/* Overlay with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-transparent"></div>
 
       {/* Content */}
       <div className="relative z-10 flex items-center justify-center w-full h-full">
         <Toaster position="top-center" reverseOrder={false} />
-        <div className="flex flex-col gap-4 p-6 border rounded-xl w-96 shadow-2xl bg-white/90 backdrop-blur-md">
+        <div className="flex flex-col gap-6 p-6 w-96 rounded-2xl shadow-2xl bg-white/20 backdrop-blur-xl border border-white/30 animate-fadeIn">
+          {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {attendanceSummary.map((item) => (
               <div
                 key={item.title}
-                className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg"
+                className="flex items-center gap-3 p-4 bg-white/40 backdrop-blur-lg rounded-xl shadow hover:scale-105 transition-transform"
               >
                 {item.icon}
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500">{item.title}</span>
-                  <span className="font-semibold">{item.value}</span>
+                  <span className="text-xs text-gray-700">{item.title}</span>
+                  <span className="font-bold text-gray-900">{item.value}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="p-3 bg-gray-100 rounded-md text-sm text-center">
+          {/* Status */}
+          <div className="p-3 bg-white/40 backdrop-blur-lg rounded-lg text-sm text-center shadow">
             {checkInStatus === "checkedIn" && checkInTime ? (
               <p className="font-semibold text-green-600">
                 <FaRegCheckCircle className="inline-block mr-2" />
@@ -1281,43 +1284,45 @@ export default function AttendanceButtons() {
                 Checked out at {checkOutTime}
               </p>
             ) : (
-              <p>You are not checked in yet</p>
+              <p className="text-gray-800">You are not checked in yet</p>
             )}
           </div>
 
+          {/* Reason Form */}
           {showReason && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <textarea
                 placeholder="Reason (required)"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="border p-2 rounded"
+                className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
               />
               <textarea
                 placeholder="Remarks (optional)"
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
-                className="border p-2 rounded"
+                className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
               />
               <button
                 onClick={() => actionType && handleAttendance(actionType)}
                 disabled={loading || !reason}
-                className="relative bg-green-600 text-white py-2 rounded overflow-hidden"
+                className="bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-all"
               >
                 {loading ? "Submitting..." : "Submit"}
               </button>
             </div>
           )}
 
+          {/* Action Buttons */}
           {!showReason && (
-            <>
+            <div className="flex flex-col gap-3">
               <button
                 onClick={checkInClick}
                 disabled={loading || checkInStatus !== "notCheckedIn"}
-                className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+                className={`py-2 rounded-lg font-semibold transition-all duration-300 shadow ${
                   checkInStatus !== "notCheckedIn"
-                    ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                    : "bg-blue-600 text-white"
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105"
                 }`}
               >
                 {checkInStatus === "checkedIn" || checkInStatus === "checkedOut"
@@ -1327,15 +1332,15 @@ export default function AttendanceButtons() {
               <button
                 onClick={checkOutClick}
                 disabled={loading || checkInStatus !== "checkedIn"}
-                className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+                className={`py-2 rounded-lg font-semibold transition-all duration-300 shadow ${
                   checkInStatus !== "checkedIn"
-                    ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                    : "bg-red-600 text-white"
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-red-600 hover:bg-red-700 text-white hover:scale-105"
                 }`}
               >
                 Check Out
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
