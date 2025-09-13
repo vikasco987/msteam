@@ -843,7 +843,7 @@
 //       </div>
 //     </>
 //   );
-// // }
+// // // }
 // "use client";
 
 // import { useState, useEffect } from "react";
@@ -1070,10 +1070,9 @@
 
 
 
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { FaRegCheckCircle, FaClock, FaCalendarAlt } from "react-icons/fa";
 
@@ -1090,11 +1089,14 @@ export default function AttendanceButtons() {
   >("notCheckedIn");
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
-  const [overtime, setOvertime] = useState<string>("0h 0m");
-  const [hoursWorked, setHoursWorked] = useState<string>("0h 0m");
+  const [hoursWorked, setHoursWorked] = useState<string>("00:00:00");
+  const [overtime, setOvertime] = useState<string>("00:00:00");
   const [isClient, setIsClient] = useState(false);
 
-  // ------------------ Helper: convert backend UTC date to local time string ------------------
+  // store actual Date objects for live calc
+  const checkInDateRef = useRef<Date | null>(null);
+  const checkOutDateRef = useRef<Date | null>(null);
+
   const formatTime = (utcDate: string) => {
     if (!utcDate) return null;
     const d = new Date(utcDate);
@@ -1102,6 +1104,20 @@ export default function AttendanceButtons() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // Format ms -> HH:MM:SS
+  const formatDuration = (ms: number) => {
+    const h = Math.floor(ms / (1000 * 60 * 60))
+      .toString()
+      .padStart(2, "0");
+    const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60))
+      .toString()
+      .padStart(2, "0");
+    const s = Math.floor((ms % (1000 * 60)) / 1000)
+      .toString()
+      .padStart(2, "0");
+    return `${h}:${m}:${s}`;
   };
 
   // ------------------ Fetch today's attendance ------------------
@@ -1119,19 +1135,27 @@ export default function AttendanceButtons() {
           checkedOut ? "checkedOut" : checkedIn ? "checkedIn" : "notCheckedIn"
         );
 
-        setCheckInTime(formatTime(att.checkIn));
-        setCheckOutTime(formatTime(att.checkOut));
+        if (att.checkIn) {
+          checkInDateRef.current = new Date(att.checkIn);
+          setCheckInTime(formatTime(att.checkIn));
+        } else {
+          checkInDateRef.current = null;
+          setCheckInTime(null);
+        }
 
-        const wh = att.workingHours || 0;
-        const ot = att.overtimeHours || 0;
-        setHoursWorked(`${Math.floor(wh)}h ${Math.floor((wh % 1) * 60)}m`);
-        setOvertime(`${Math.floor(ot)}h ${Math.floor((ot % 1) * 60)}m`);
+        if (att.checkOut) {
+          checkOutDateRef.current = new Date(att.checkOut);
+          setCheckOutTime(formatTime(att.checkOut));
+        } else {
+          checkOutDateRef.current = null;
+          setCheckOutTime(null);
+        }
       } else {
         setCheckInStatus("notCheckedIn");
         setCheckInTime(null);
         setCheckOutTime(null);
-        setHoursWorked("0h 0m");
-        setOvertime("0h 0m");
+        checkInDateRef.current = null;
+        checkOutDateRef.current = null;
       }
     } catch (err) {
       console.error("Error fetching today's attendance:", err);
@@ -1142,6 +1166,37 @@ export default function AttendanceButtons() {
     setIsClient(true);
     fetchTodayAttendance();
   }, []);
+
+  // ------------------ Live Update Every Second ------------------
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (checkInStatus === "checkedIn" && checkInDateRef.current) {
+        const now = new Date();
+        const workedMs = now.getTime() - checkInDateRef.current.getTime();
+        setHoursWorked(formatDuration(workedMs));
+
+        // overtime if > 9h
+        const overtimeMs = workedMs - 9 * 60 * 60 * 1000;
+        setOvertime(overtimeMs > 0 ? formatDuration(overtimeMs) : "00:00:00");
+      } else if (
+        checkInStatus === "checkedOut" &&
+        checkInDateRef.current &&
+        checkOutDateRef.current
+      ) {
+        const workedMs =
+          checkOutDateRef.current.getTime() - checkInDateRef.current.getTime();
+        setHoursWorked(formatDuration(workedMs));
+
+        const overtimeMs = workedMs - 9 * 60 * 60 * 1000;
+        setOvertime(overtimeMs > 0 ? formatDuration(overtimeMs) : "00:00:00");
+      } else {
+        setHoursWorked("00:00:00");
+        setOvertime("00:00:00");
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [checkInStatus]);
 
   // ------------------ Handle check-in / check-out ------------------
   const handleAttendance = async (type: "checkIn" | "checkOut") => {
@@ -1181,7 +1236,7 @@ export default function AttendanceButtons() {
         toast.error(data.error || "Failed to mark attendance");
       } else {
         toast.success("Attendance marked successfully!");
-        fetchTodayAttendance(); // ✅ Refresh after check-in/out
+        fetchTodayAttendance();
       }
     } catch (err) {
       console.error(err);
@@ -1215,135 +1270,113 @@ export default function AttendanceButtons() {
     {
       title: "Hours Worked Today",
       value: hoursWorked,
-      icon: <FaClock className="text-indigo-600" />,
+      icon: <FaClock className="text-gray-600" />,
     },
     {
       title: "Overtime",
       value: overtime,
-      icon: <FaCalendarAlt className="text-pink-600" />,
+      icon: <FaCalendarAlt className="text-gray-600" />,
     },
     {
       title: "Last Check-in",
       value: checkInTime || "N/A",
-      icon: <FaRegCheckCircle className="text-green-600" />,
+      icon: <FaRegCheckCircle className="text-gray-600" />,
     },
     {
       title: "Last Check-out",
       value: checkOutTime || "N/A",
-      icon: <FaRegCheckCircle className="text-red-600" />,
+      icon: <FaRegCheckCircle className="text-gray-600" />,
     },
   ];
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      {/* 🔥 Background Video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        poster="/videos/fallback.jpg"
-        className="absolute top-0 left-0 w-full h-full object-cover"
-      >
-        <source src="/videos/background.mp4" type="video/mp4" />
-      </video>
-
-      {/* Overlay with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-transparent"></div>
-
-      {/* Content */}
-      <div className="relative z-10 flex items-center justify-center w-full h-full">
-        <Toaster position="top-center" reverseOrder={false} />
-        <div className="flex flex-col gap-6 p-6 w-96 rounded-2xl shadow-2xl bg-white/20 backdrop-blur-xl border border-white/30 animate-fadeIn">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {attendanceSummary.map((item) => (
-              <div
-                key={item.title}
-                className="flex items-center gap-3 p-4 bg-white/40 backdrop-blur-lg rounded-xl shadow hover:scale-105 transition-transform"
-              >
-                {item.icon}
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-700">{item.title}</span>
-                  <span className="font-bold text-gray-900">{item.value}</span>
-                </div>
+    <>
+      <Toaster position="top-center" reverseOrder={false} />
+      <div className="flex flex-col gap-4 p-4 border rounded-lg w-80 shadow-md bg-white/70 backdrop-blur">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {attendanceSummary.map((item) => (
+            <div
+              key={item.title}
+              className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg"
+            >
+              {item.icon}
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-500">{item.title}</span>
+                <span className="font-semibold">{item.value}</span>
               </div>
-            ))}
-          </div>
-
-          {/* Status */}
-          <div className="p-3 bg-white/40 backdrop-blur-lg rounded-lg text-sm text-center shadow">
-            {checkInStatus === "checkedIn" && checkInTime ? (
-              <p className="font-semibold text-green-600">
-                <FaRegCheckCircle className="inline-block mr-2" />
-                Checked in at {checkInTime}
-              </p>
-            ) : checkInStatus === "checkedOut" && checkOutTime ? (
-              <p className="font-semibold text-blue-600">
-                <FaRegCheckCircle className="inline-block mr-2" />
-                Checked out at {checkOutTime}
-              </p>
-            ) : (
-              <p className="text-gray-800">You are not checked in yet</p>
-            )}
-          </div>
-
-          {/* Reason Form */}
-          {showReason && (
-            <div className="flex flex-col gap-3">
-              <textarea
-                placeholder="Reason (required)"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
-              />
-              <textarea
-                placeholder="Remarks (optional)"
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                className="border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
-              />
-              <button
-                onClick={() => actionType && handleAttendance(actionType)}
-                disabled={loading || !reason}
-                className="bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-all"
-              >
-                {loading ? "Submitting..." : "Submit"}
-              </button>
             </div>
-          )}
+          ))}
+        </div>
 
-          {/* Action Buttons */}
-          {!showReason && (
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={checkInClick}
-                disabled={loading || checkInStatus !== "notCheckedIn"}
-                className={`py-2 rounded-lg font-semibold transition-all duration-300 shadow ${
-                  checkInStatus !== "notCheckedIn"
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105"
-                }`}
-              >
-                {checkInStatus === "checkedIn" || checkInStatus === "checkedOut"
-                  ? "Already Checked In ✔️"
-                  : "Check In"}
-              </button>
-              <button
-                onClick={checkOutClick}
-                disabled={loading || checkInStatus !== "checkedIn"}
-                className={`py-2 rounded-lg font-semibold transition-all duration-300 shadow ${
-                  checkInStatus !== "checkedIn"
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-700 text-white hover:scale-105"
-                }`}
-              >
-                Check Out
-              </button>
-            </div>
+        <div className="p-3 bg-gray-100 rounded-md text-sm text-center">
+          {checkInStatus === "checkedIn" && checkInTime ? (
+            <p className="font-semibold text-green-600">
+              <FaRegCheckCircle className="inline-block mr-2" />
+              Checked in at {checkInTime}
+            </p>
+          ) : checkInStatus === "checkedOut" && checkOutTime ? (
+            <p className="font-semibold text-blue-600">
+              <FaRegCheckCircle className="inline-block mr-2" />
+              Checked out at {checkOutTime}
+            </p>
+          ) : (
+            <p>You are not checked in yet</p>
           )}
         </div>
+
+        {showReason && (
+          <div className="flex flex-col gap-2">
+            <textarea
+              placeholder="Reason (required)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="border p-2 rounded"
+            />
+            <textarea
+              placeholder="Remarks (optional)"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              className="border p-2 rounded"
+            />
+            <button
+              onClick={() => actionType && handleAttendance(actionType)}
+              disabled={loading || !reason}
+              className="relative bg-green-600 text-white py-2 rounded overflow-hidden"
+            >
+              {loading ? "Submitting..." : "Submit"}
+            </button>
+          </div>
+        )}
+
+        {!showReason && (
+          <>
+            <button
+              onClick={checkInClick}
+              disabled={loading || checkInStatus !== "notCheckedIn"}
+              className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+                checkInStatus !== "notCheckedIn"
+                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                  : "bg-blue-600 text-white"
+              }`}
+            >
+              {checkInStatus === "checkedIn" || checkInStatus === "checkedOut"
+                ? "Already Checked In ✔️"
+                : "Check In"}
+            </button>
+            <button
+              onClick={checkOutClick}
+              disabled={loading || checkInStatus !== "checkedIn"}
+              className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+                checkInStatus !== "checkedIn"
+                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                  : "bg-red-600 text-white"
+              }`}
+            >
+              Check Out
+            </button>
+          </>
+        )}
       </div>
-    </div>
+    </>
   );
 }
