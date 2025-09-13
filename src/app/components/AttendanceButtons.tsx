@@ -843,7 +843,233 @@
 //       </div>
 //     </>
 //   );
+// // }
+// "use client";
+
+// import { useState, useEffect } from "react";
+// import toast, { Toaster } from "react-hot-toast";
+// import { FaRegCheckCircle, FaClock, FaCalendarAlt } from "react-icons/fa";
+
+// export default function AttendanceButtons() {
+//   const [loading, setLoading] = useState(false);
+//   const [reason, setReason] = useState("");
+//   const [remarks, setRemarks] = useState("");
+//   const [showReason, setShowReason] = useState(false);
+//   const [actionType, setActionType] = useState<"checkIn" | "checkOut" | null>(null);
+//   const [checkInStatus, setCheckInStatus] = useState<"notCheckedIn" | "checkedIn" | "checkedOut">("notCheckedIn");
+//   const [checkInTime, setCheckInTime] = useState<string | null>(null);
+//   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
+//   const [overtime, setOvertime] = useState<string>("0h 0m");
+//   const [hoursWorked, setHoursWorked] = useState<string>("0h 0m");
+//   const [isClient, setIsClient] = useState(false);
+
+//   // ------------------ Helper: convert backend UTC date to local time string ------------------
+//   const formatTime = (utcDate: string) => {
+//     if (!utcDate) return null;
+//     const d = new Date(utcDate);
+//     return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+//   };
+
+//   // ------------------ Fetch today's attendance ------------------
+//   const fetchTodayAttendance = async () => {
+//     try {
+//       const res = await fetch("/api/attendance/today");
+//       const data = await res.json();
+
+//       if (data.attendance) {
+//         const att = data.attendance;
+//         const checkedIn = !!att.checkIn;
+//         const checkedOut = !!att.checkOut;
+
+//         setCheckInStatus(
+//           checkedOut ? "checkedOut" : checkedIn ? "checkedIn" : "notCheckedIn"
+//         );
+
+//         setCheckInTime(formatTime(att.checkIn));
+//         setCheckOutTime(formatTime(att.checkOut));
+
+//         const wh = att.workingHours || 0;
+//         const ot = att.overtimeHours || 0;
+//         setHoursWorked(`${Math.floor(wh)}h ${Math.floor((wh % 1) * 60)}m`);
+//         setOvertime(`${Math.floor(ot)}h ${Math.floor((ot % 1) * 60)}m`);
+//       } else {
+//         setCheckInStatus("notCheckedIn");
+//         setCheckInTime(null);
+//         setCheckOutTime(null);
+//         setHoursWorked("0h 0m");
+//         setOvertime("0h 0m");
+//       }
+//     } catch (err) {
+//       console.error("Error fetching today's attendance:", err);
+//     }
+//   };
+
+//   useEffect(() => {
+//     setIsClient(true);
+//     fetchTodayAttendance();
+//   }, []);
+
+//   // ------------------ Handle check-in / check-out ------------------
+//   const handleAttendance = async (type: "checkIn" | "checkOut") => {
+//     setLoading(true);
+//     try {
+//       let latitude: number | null = null;
+//       let longitude: number | null = null;
+
+//       if (navigator.geolocation) {
+//         await new Promise<void>((resolve) => {
+//           navigator.geolocation.getCurrentPosition(
+//             (pos) => {
+//               latitude = pos.coords.latitude;
+//               longitude = pos.coords.longitude;
+//               resolve();
+//             },
+//             () => resolve(),
+//             { enableHighAccuracy: true, timeout: 10000 }
+//           );
+//         });
+//       }
+
+//       const res = await fetch("/api/attendance", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ type, reason, remarks, lat: latitude, lng: longitude }),
+//       });
+
+//       const data = await res.json();
+//       if (!res.ok) {
+//         toast.error(data.error || "Failed to mark attendance");
+//       } else {
+//         toast.success("Attendance marked successfully!");
+//         fetchTodayAttendance(); // ✅ Refresh after check-in/out
+//       }
+//     } catch (err) {
+//       console.error(err);
+//       toast.error("Error marking attendance");
+//     } finally {
+//       setLoading(false);
+//       setReason("");
+//       setRemarks("");
+//       setShowReason(false);
+//       setActionType(null);
+//     }
+//   };
+
+//   const checkInClick = () => {
+//     const hour = new Date().getHours();
+//     setActionType("checkIn");
+//     if (hour >= 10) setShowReason(true);
+//     else handleAttendance("checkIn");
+//   };
+
+//   const checkOutClick = () => {
+//     const hour = new Date().getHours();
+//     setActionType("checkOut");
+//     if (hour < 19) setShowReason(true);
+//     else handleAttendance("checkOut");
+//   };
+
+//   if (!isClient) return <div className="p-4 text-gray-500">Loading...</div>;
+
+//   const attendanceSummary = [
+//     { title: "Hours Worked Today", value: hoursWorked, icon: <FaClock className="text-gray-600" /> },
+//     { title: "Overtime", value: overtime, icon: <FaCalendarAlt className="text-gray-600" /> },
+//     { title: "Last Check-in", value: checkInTime || "N/A", icon: <FaRegCheckCircle className="text-gray-600" /> },
+//     { title: "Last Check-out", value: checkOutTime || "N/A", icon: <FaRegCheckCircle className="text-gray-600" /> },
+//   ];
+
+//   return (
+//     <>
+//       <Toaster position="top-center" reverseOrder={false} />
+//       <div className="flex flex-col gap-4 p-4 border rounded-lg w-80 shadow-md">
+//         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//           {attendanceSummary.map((item) => (
+//             <div key={item.title} className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg">
+//               {item.icon}
+//               <div className="flex flex-col">
+//                 <span className="text-xs text-gray-500">{item.title}</span>
+//                 <span className="font-semibold">{item.value}</span>
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+
+//         <div className="p-3 bg-gray-100 rounded-md text-sm text-center">
+//           {checkInStatus === "checkedIn" && checkInTime ? (
+//             <p className="font-semibold text-green-600">
+//               <FaRegCheckCircle className="inline-block mr-2" />
+//               Checked in at {checkInTime}
+//             </p>
+//           ) : checkInStatus === "checkedOut" && checkOutTime ? (
+//             <p className="font-semibold text-blue-600">
+//               <FaRegCheckCircle className="inline-block mr-2" />
+//               Checked out at {checkOutTime}
+//             </p>
+//           ) : (
+//             <p>You are not checked in yet</p>
+//           )}
+//         </div>
+
+//         {showReason && (
+//           <div className="flex flex-col gap-2">
+//             <textarea
+//               placeholder="Reason (required)"
+//               value={reason}
+//               onChange={(e) => setReason(e.target.value)}
+//               className="border p-2 rounded"
+//             />
+//             <textarea
+//               placeholder="Remarks (optional)"
+//               value={remarks}
+//               onChange={(e) => setRemarks(e.target.value)}
+//               className="border p-2 rounded"
+//             />
+//             <button
+//               onClick={() => actionType && handleAttendance(actionType)}
+//               disabled={loading || !reason}
+//               className="relative bg-green-600 text-white py-2 rounded overflow-hidden"
+//             >
+//               {loading ? "Submitting..." : "Submit"}
+//             </button>
+//           </div>
+//         )}
+
+//         {!showReason && (
+//           <>
+//             <button
+//               onClick={checkInClick}
+//               disabled={loading || checkInStatus !== "notCheckedIn"}
+//               className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+//                 checkInStatus !== "notCheckedIn"
+//                   ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+//                   : "bg-blue-600 text-white"
+//               }`}
+//             >
+//               {checkInStatus === "checkedIn" || checkInStatus === "checkedOut"
+//                 ? "Already Checked In ✔️"
+//                 : "Check In"}
+//             </button>
+//             <button
+//               onClick={checkOutClick}
+//               disabled={loading || checkInStatus !== "checkedIn"}
+//               className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+//                 checkInStatus !== "checkedIn"
+//                   ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+//                   : "bg-red-600 text-white"
+//               }`}
+//             >
+//               Check Out
+//             </button>
+//           </>
+//         )}
+//       </div>
+//     </>
+//   );
 // }
+
+
+
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -855,8 +1081,12 @@ export default function AttendanceButtons() {
   const [reason, setReason] = useState("");
   const [remarks, setRemarks] = useState("");
   const [showReason, setShowReason] = useState(false);
-  const [actionType, setActionType] = useState<"checkIn" | "checkOut" | null>(null);
-  const [checkInStatus, setCheckInStatus] = useState<"notCheckedIn" | "checkedIn" | "checkedOut">("notCheckedIn");
+  const [actionType, setActionType] = useState<"checkIn" | "checkOut" | null>(
+    null
+  );
+  const [checkInStatus, setCheckInStatus] = useState<
+    "notCheckedIn" | "checkedIn" | "checkedOut"
+  >("notCheckedIn");
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
   const [overtime, setOvertime] = useState<string>("0h 0m");
@@ -867,7 +1097,10 @@ export default function AttendanceButtons() {
   const formatTime = (utcDate: string) => {
     if (!utcDate) return null;
     const d = new Date(utcDate);
-    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   // ------------------ Fetch today's attendance ------------------
@@ -933,7 +1166,13 @@ export default function AttendanceButtons() {
       const res = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, reason, remarks, lat: latitude, lng: longitude }),
+        body: JSON.stringify({
+          type,
+          reason,
+          remarks,
+          lat: latitude,
+          lng: longitude,
+        }),
       });
 
       const data = await res.json();
@@ -972,97 +1211,134 @@ export default function AttendanceButtons() {
   if (!isClient) return <div className="p-4 text-gray-500">Loading...</div>;
 
   const attendanceSummary = [
-    { title: "Hours Worked Today", value: hoursWorked, icon: <FaClock className="text-gray-600" /> },
-    { title: "Overtime", value: overtime, icon: <FaCalendarAlt className="text-gray-600" /> },
-    { title: "Last Check-in", value: checkInTime || "N/A", icon: <FaRegCheckCircle className="text-gray-600" /> },
-    { title: "Last Check-out", value: checkOutTime || "N/A", icon: <FaRegCheckCircle className="text-gray-600" /> },
+    {
+      title: "Hours Worked Today",
+      value: hoursWorked,
+      icon: <FaClock className="text-gray-600" />,
+    },
+    {
+      title: "Overtime",
+      value: overtime,
+      icon: <FaCalendarAlt className="text-gray-600" />,
+    },
+    {
+      title: "Last Check-in",
+      value: checkInTime || "N/A",
+      icon: <FaRegCheckCircle className="text-gray-600" />,
+    },
+    {
+      title: "Last Check-out",
+      value: checkOutTime || "N/A",
+      icon: <FaRegCheckCircle className="text-gray-600" />,
+    },
   ];
 
   return (
-    <>
-      <Toaster position="top-center" reverseOrder={false} />
-      <div className="flex flex-col gap-4 p-4 border rounded-lg w-80 shadow-md">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {attendanceSummary.map((item) => (
-            <div key={item.title} className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg">
-              {item.icon}
-              <div className="flex flex-col">
-                <span className="text-xs text-gray-500">{item.title}</span>
-                <span className="font-semibold">{item.value}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className="relative w-full h-screen overflow-hidden">
+      {/* 🔥 Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        poster="/videos/fallback.jpg"
+        className="absolute top-0 left-0 w-full h-full object-cover"
+      >
+        <source src="/videos/background.mp4" type="video/mp4" />
+      </video>
 
-        <div className="p-3 bg-gray-100 rounded-md text-sm text-center">
-          {checkInStatus === "checkedIn" && checkInTime ? (
-            <p className="font-semibold text-green-600">
-              <FaRegCheckCircle className="inline-block mr-2" />
-              Checked in at {checkInTime}
-            </p>
-          ) : checkInStatus === "checkedOut" && checkOutTime ? (
-            <p className="font-semibold text-blue-600">
-              <FaRegCheckCircle className="inline-block mr-2" />
-              Checked out at {checkOutTime}
-            </p>
-          ) : (
-            <p>You are not checked in yet</p>
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40"></div>
+
+      {/* Content */}
+      <div className="relative z-10 flex items-center justify-center w-full h-full">
+        <Toaster position="top-center" reverseOrder={false} />
+        <div className="flex flex-col gap-4 p-6 border rounded-xl w-96 shadow-2xl bg-white/90 backdrop-blur-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {attendanceSummary.map((item) => (
+              <div
+                key={item.title}
+                className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg"
+              >
+                {item.icon}
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500">{item.title}</span>
+                  <span className="font-semibold">{item.value}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 bg-gray-100 rounded-md text-sm text-center">
+            {checkInStatus === "checkedIn" && checkInTime ? (
+              <p className="font-semibold text-green-600">
+                <FaRegCheckCircle className="inline-block mr-2" />
+                Checked in at {checkInTime}
+              </p>
+            ) : checkInStatus === "checkedOut" && checkOutTime ? (
+              <p className="font-semibold text-blue-600">
+                <FaRegCheckCircle className="inline-block mr-2" />
+                Checked out at {checkOutTime}
+              </p>
+            ) : (
+              <p>You are not checked in yet</p>
+            )}
+          </div>
+
+          {showReason && (
+            <div className="flex flex-col gap-2">
+              <textarea
+                placeholder="Reason (required)"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="border p-2 rounded"
+              />
+              <textarea
+                placeholder="Remarks (optional)"
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                className="border p-2 rounded"
+              />
+              <button
+                onClick={() => actionType && handleAttendance(actionType)}
+                disabled={loading || !reason}
+                className="relative bg-green-600 text-white py-2 rounded overflow-hidden"
+              >
+                {loading ? "Submitting..." : "Submit"}
+              </button>
+            </div>
+          )}
+
+          {!showReason && (
+            <>
+              <button
+                onClick={checkInClick}
+                disabled={loading || checkInStatus !== "notCheckedIn"}
+                className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+                  checkInStatus !== "notCheckedIn"
+                    ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                    : "bg-blue-600 text-white"
+                }`}
+              >
+                {checkInStatus === "checkedIn" || checkInStatus === "checkedOut"
+                  ? "Already Checked In ✔️"
+                  : "Check In"}
+              </button>
+              <button
+                onClick={checkOutClick}
+                disabled={loading || checkInStatus !== "checkedIn"}
+                className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
+                  checkInStatus !== "checkedIn"
+                    ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                    : "bg-red-600 text-white"
+                }`}
+              >
+                Check Out
+              </button>
+            </>
           )}
         </div>
-
-        {showReason && (
-          <div className="flex flex-col gap-2">
-            <textarea
-              placeholder="Reason (required)"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="border p-2 rounded"
-            />
-            <textarea
-              placeholder="Remarks (optional)"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              className="border p-2 rounded"
-            />
-            <button
-              onClick={() => actionType && handleAttendance(actionType)}
-              disabled={loading || !reason}
-              className="relative bg-green-600 text-white py-2 rounded overflow-hidden"
-            >
-              {loading ? "Submitting..." : "Submit"}
-            </button>
-          </div>
-        )}
-
-        {!showReason && (
-          <>
-            <button
-              onClick={checkInClick}
-              disabled={loading || checkInStatus !== "notCheckedIn"}
-              className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
-                checkInStatus !== "notCheckedIn"
-                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                  : "bg-blue-600 text-white"
-              }`}
-            >
-              {checkInStatus === "checkedIn" || checkInStatus === "checkedOut"
-                ? "Already Checked In ✔️"
-                : "Check In"}
-            </button>
-            <button
-              onClick={checkOutClick}
-              disabled={loading || checkInStatus !== "checkedIn"}
-              className={`relative py-2 rounded overflow-hidden transition-all duration-300 ${
-                checkInStatus !== "checkedIn"
-                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                  : "bg-red-600 text-white"
-              }`}
-            >
-              Check Out
-            </button>
-          </>
-        )}
       </div>
-    </>
+    </div>
   );
 }
