@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { IndianRupee, TrendingUp, CheckCircle, ShoppingBag } from "lucide-react";
+import { IndianRupee, TrendingUp, CheckCircle, ShoppingBag, Percent } from "lucide-react"; 
 
 import RevenueByAssigneeChart from "../components/charts/RevenueByAssigneeChart";
 import MonthReportTable from "../components/tables/MonthReportTable";
@@ -17,7 +17,7 @@ import CumulativeChartSwitcher from "../components/charts/CumulativeChartSwitche
 // ⬇️ New imports for combined Assigner sales section
 import DayReportByAssignerTable from "../components/tables/DayReportByAssignerTable";
 import WeekReportByAssignerTable from "../components/tables/AssignerReportTable";
-import CategorySalesTable from "../components/tables/category-sales"; // ✅ New Import
+import CategorySalesTable from "../components/tables/category-sales"; 
 
 import {
   ResponsiveContainer,
@@ -71,6 +71,12 @@ export default function SalesDashboardPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [showGoalProgress, setShowGoalProgress] = useState(false);
   const [cumulativeDayData, setCumulativeDayData] = useState<ReportEntry[]>([]);
+
+  // Calculate pending percentage
+  const pendingPercentage = stats?.totalRevenue && stats.totalRevenue > 0
+    ? ((stats.pendingAmount / stats.totalRevenue) * 100).toFixed(1)
+    : "0.0";
+
 
   useEffect(() => {
     if (user && !["admin", "master"].includes(user?.publicMetadata?.role as string)) {
@@ -148,7 +154,8 @@ export default function SalesDashboardPage() {
       </div>
 
       {/* 📊 This Month Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mt-2"> 
+        {/* Total Revenue */}
         <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-5 rounded-xl shadow-lg text-white">
           <div className="flex items-center justify-between">
             <h3>Total Revenue</h3>
@@ -157,6 +164,7 @@ export default function SalesDashboardPage() {
           <p className="mt-2 text-2xl font-bold">₹{stats.totalRevenue?.toLocaleString() ?? 0}</p>
         </div>
 
+        {/* Received */}
         <div className="bg-gradient-to-r from-green-400 to-emerald-500 p-5 rounded-xl shadow-lg text-white">
           <div className="flex items-center justify-between">
             <h3>Received</h3>
@@ -165,6 +173,7 @@ export default function SalesDashboardPage() {
           <p className="mt-2 text-2xl font-bold">₹{stats.amountReceived?.toLocaleString() ?? 0}</p>
         </div>
 
+        {/* Pending */}
         <div className="bg-gradient-to-r from-red-400 to-rose-500 p-5 rounded-xl shadow-lg text-white">
           <div className="flex items-center justify-between">
             <h3>Pending</h3>
@@ -172,7 +181,17 @@ export default function SalesDashboardPage() {
           </div>
           <p className="mt-2 text-2xl font-bold">₹{stats.pendingAmount?.toLocaleString() ?? 0}</p>
         </div>
+        
+        {/* UPDATED CARD: Pending Percentage with new color */}
+        <div className="bg-gradient-to-r from-pink-500 to-red-600 p-5 rounded-xl shadow-lg text-white">
+          <div className="flex items-center justify-between">
+            <h3>Pending %</h3>
+            <Percent />
+          </div>
+          <p className="mt-2 text-2xl font-bold">{pendingPercentage}%</p>
+        </div>
 
+        {/* Sales */}
         <div className="bg-gradient-to-r from-yellow-400 to-amber-500 p-5 rounded-xl shadow-lg text-white">
           <div className="flex items-center justify-between">
             <h3>Sales</h3>
@@ -183,12 +202,12 @@ export default function SalesDashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-2 border-b mt-8">
+      <div className="flex space-x-2 border-b mt-8 overflow-x-auto pb-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 font-medium border-b-2 ${
+            className={`px-4 py-2 font-medium border-b-2 whitespace-nowrap ${
               activeTab === tab.key ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500"
             }`}
           >

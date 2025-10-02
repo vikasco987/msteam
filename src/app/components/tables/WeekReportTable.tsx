@@ -50,6 +50,11 @@ export default function WeekReportTable() {
     today >= new Date(week.startDate) && today <= new Date(week.endDate)
   );
 
+  // Calculate overall pending percentage for the current week for the card
+  const currentWeekPendingPercent = currentWeekData?.totalRevenue > 0
+    ? (currentWeekData.pendingAmount / currentWeekData.totalRevenue) * 100
+    : 0;
+
   return (
     <div className="bg-white p-8 rounded-lg shadow-2xl border border-gray-100 font-sans text-gray-900 transition-shadow duration-300 hover:shadow-3xl">
       {/* Header */}
@@ -65,7 +70,7 @@ export default function WeekReportTable() {
         <>
           {/* Summary Section - Displays only current week's data */}
           {currentWeekData && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
               <div className="bg-purple-50 p-4 rounded-lg shadow-sm text-center">
                 <p className="text-sm text-purple-700">Total Leads</p>
                 <p className="text-2xl font-bold text-purple-900">{currentWeekData.totalLeads.toLocaleString()}</p>
@@ -81,6 +86,13 @@ export default function WeekReportTable() {
               <div className="bg-red-50 p-4 rounded-lg shadow-sm text-center">
                 <p className="text-sm text-red-700">Pending Amount</p>
                 <p className="text-2xl font-bold text-red-900">₹{currentWeekData.pendingAmount.toLocaleString()}</p>
+              </div>
+              {/* NEW CARD: Pending Percentage */}
+              <div className="bg-orange-50 p-4 rounded-lg shadow-sm text-center border-2 border-orange-200">
+                <p className="text-sm text-orange-700 font-medium">Pending %</p>
+                <p className="text-2xl font-black text-orange-900">
+                    {currentWeekPendingPercent.toFixed(1)}%
+                </p>
               </div>
             </div>
           )}
@@ -108,6 +120,10 @@ export default function WeekReportTable() {
                   </th>
                   <th className="p-4 font-bold tracking-wider text-right" data-tooltip-id="pending-tip">
                     <span className="flex items-center justify-end gap-2"><IndianRupee size={16} /> Pending</span>
+                  </th>
+                  {/* PENDING PERCENTAGE COLUMN */}
+                  <th className="p-4 font-bold tracking-wider text-right" data-tooltip-id="pending-percent-tip">
+                    <span className="flex items-center justify-end gap-2"><ArrowDown size={16} /> Pending %</span>
                   </th>
                 </tr>
               </thead>
@@ -138,8 +154,13 @@ export default function WeekReportTable() {
                     return null;
                   };
 
-                  const completionPercentage = week.totalRevenue > 0 
+                  const receivedPercentage = week.totalRevenue > 0 
                     ? (week.amountReceived / week.totalRevenue) * 100 
+                    : 0;
+
+                  // Calculation for the new column
+                  const pendingPercentage = week.totalRevenue > 0 
+                    ? (week.pendingAmount / week.totalRevenue) * 100 
                     : 0;
 
                   return (
@@ -178,7 +199,7 @@ export default function WeekReportTable() {
                           {week.totalRevenue > 0 && (
                             <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
-                                style={{ width: `${completionPercentage}%` }}
+                                style={{ width: `${receivedPercentage}%` }}
                                 className="h-full bg-blue-500 transition-all duration-500 ease-out"
                               ></div>
                             </div>
@@ -197,6 +218,22 @@ export default function WeekReportTable() {
                             ₹{week.pendingAmount.toLocaleString()}
                           </span>
                           {getTrendIndicator(week.pendingAmount, prevWeek?.pendingAmount, true)}
+                        </span>
+                      </td>
+                      {/* PENDING PERCENTAGE DATA CELL */}
+                      <td className="p-4 font-bold text-gray-600 text-right">
+                        <span className="flex flex-col items-end gap-1">
+                            <span className="text-sm font-extrabold text-red-700">
+                                {pendingPercentage.toFixed(1)}%
+                            </span>
+                            {week.totalRevenue > 0 && (
+                                <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        style={{ width: `${pendingPercentage}%` }}
+                                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500 ease-out"
+                                    ></div>
+                                </div>
+                            )}
                         </span>
                       </td>
                     </motion.tr>
@@ -263,6 +300,7 @@ export default function WeekReportTable() {
       <Tooltip id="revenue-tip" content="Total revenue generated from all leads in this week." />
       <Tooltip id="received-tip" content="Total amount paid by clients during this week." />
       <Tooltip id="pending-tip" content="The remaining unpaid balance for all work in this week." />
+      <Tooltip id="pending-percent-tip" content="Percentage of total revenue that remains pending." />
     </div>
   );
 }

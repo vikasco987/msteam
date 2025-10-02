@@ -15,7 +15,7 @@ type MonthReport = {
 };
 
 type SortConfig = {
-  key: keyof MonthReport | null;
+  key: keyof MonthReport | 'pendingPercentage' | null; // Added 'pendingPercentage' for sorting capability
   direction: "ascending" | "descending";
 };
 
@@ -51,7 +51,13 @@ export default function MonthReportTable() {
 
   // Memoize filtered and sorted data for performance
   const processedData = useMemo(() => {
-    let sortedData = [...data];
+    // 1. Map data to include calculated pendingPercentage
+    const dataWithCalculations = data.map(row => ({
+        ...row,
+        pendingPercentage: row.totalRevenue > 0 ? (row.pendingAmount / row.totalRevenue) * 100 : 0,
+    }));
+
+    let sortedData = [...dataWithCalculations];
 
     // Filter data based on search query
     if (searchQuery) {
@@ -73,24 +79,25 @@ export default function MonthReportTable() {
 
     // Sort data
     if (sortConfig.key !== null) {
-      sortedData.sort((a, b) => {
-        const aValue = a[sortConfig.key!];
-        const bValue = b[sortConfig.key!];
+        sortedData.sort((a, b) => {
+            // Special handling for 'pendingPercentage'
+            const aValue = sortConfig.key === 'pendingPercentage' ? a.pendingPercentage : a[sortConfig.key as keyof MonthReport];
+            const bValue = sortConfig.key === 'pendingPercentage' ? b.pendingPercentage : b[sortConfig.key as keyof MonthReport];
 
-        if (aValue < bValue) {
-          return sortConfig.direction === "ascending" ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === "ascending" ? 1 : -1;
-        }
-        return 0;
-      });
+            if (aValue < bValue) {
+                return sortConfig.direction === "ascending" ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === "ascending" ? 1 : -1;
+            }
+            return 0;
+        });
     }
 
     return sortedData;
   }, [data, sortConfig, searchQuery]);
   
-  const requestSort = (key: keyof MonthReport) => {
+  const requestSort = (key: keyof MonthReport | 'pendingPercentage') => {
     let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
@@ -98,7 +105,7 @@ export default function MonthReportTable() {
     setSortConfig({ key, direction });
   };
   
-  const getSortIcon = (key: keyof MonthReport) => {
+  const getSortIcon = (key: keyof MonthReport | 'pendingPercentage') => {
     if (sortConfig.key !== key) {
       return null;
     }
@@ -160,6 +167,10 @@ export default function MonthReportTable() {
                   <th className="p-4 font-bold tracking-wider text-right cursor-pointer" data-tooltip-id="pending-tip" onClick={() => requestSort("pendingAmount")}>
                     <span className="flex items-center justify-end gap-2"><IndianRupee size={16} /> Pending {getSortIcon("pendingAmount")}</span>
                   </th>
+                  {/* NEW COLUMN HEADER: Pending Percentage */}
+                  <th className="p-4 font-bold tracking-wider text-right cursor-pointer" data-tooltip-id="pending-percent-tip" onClick={() => requestSort("pendingPercentage")}>
+                    <span className="flex items-center justify-end gap-2"><ArrowDown size={16} /> Pending % {getSortIcon("pendingPercentage")}</span>
+                  </th>
                   <th className="p-4 font-bold tracking-wider text-right cursor-pointer" data-tooltip-id="leads-tip" onClick={() => requestSort("totalLeads")}>
                     <span className="flex items-center justify-end gap-2"><Users size={16} /> Leads {getSortIcon("totalLeads")}</span>
                   </th>
@@ -169,11 +180,18 @@ export default function MonthReportTable() {
                 {processedData.map((row, i) => {
                   const rowBg = i % 2 === 0 ? "bg-white" : "bg-gray-50";
                   
-                  const prevRow = processedData[i - 1];
+                  // Need to use the original data array to find the previous month
+                  // for accurate trend comparison (assuming data is fetched in reverse chronological order or by page)
+                  // For MoM, the previous index `i - 1` in the sorted array may not be the chronologically previous month,
+                  // but we'll use it for simple table comparison as per the original structure.
+                  const prevRow = processedData[i - 1]; 
 
-                  const completionPercentage = row.totalRevenue > 0 
+                  const receivedPercentage = row.totalRevenue > 0 
                     ? (row.amountReceived / row.totalRevenue) * 100 
                     : 0;
+
+                  // Pending percentage is already calculated in processedData for sorting
+                  const pendingPercentage = row.pendingPercentage;
 
                   return (
                     <motion.tr
@@ -204,7 +222,7 @@ export default function MonthReportTable() {
                           {row.totalRevenue > 0 && (
                             <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
-                                style={{ width: `${completionPercentage}%` }}
+                                style={{ width: `${receivedPercentage}%` }}
                                 className="h-full bg-blue-500 transition-all duration-500 ease-out"
                               ></div>
                             </div>
@@ -223,6 +241,22 @@ export default function MonthReportTable() {
                             ₹{row.pendingAmount.toLocaleString()}
                           </span>
                           {getTrendIndicator(row.pendingAmount, prevRow?.pendingAmount, true)}
+                        </span>
+                      </td>
+                      {/* NEW COLUMN DATA CELL: Pending Percentage */}
+                      <td className="p-4 font-bold text-gray-600 text-right">
+                        <span className="flex flex-col items-end gap-1">
+                            <span className="text-sm font-extrabold text-red-700">
+                                {pendingPercentage.toFixed(1)}%
+                            </span>
+                            {row.totalRevenue > 0 && (
+                                <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        style={{ width: `${pendingPercentage}%` }}
+                                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500 ease-out"
+                                    ></div>
+                                </div>
+                            )}
                         </span>
                       </td>
                       <td className="p-4 font-bold text-gray-600 text-right">
@@ -293,6 +327,7 @@ export default function MonthReportTable() {
       <Tooltip id="revenue-tip" content="Total revenue generated during the month." />
       <Tooltip id="received-tip" content="Total amount paid by clients during this month." />
       <Tooltip id="pending-tip" content="The remaining unpaid balance for all work in this month." />
+      <Tooltip id="pending-percent-tip" content="Percentage of total revenue that remains pending (Pending Amount / Total Revenue)." />
       <Tooltip id="leads-tip" content="Total number of leads acquired during the month." />
     </div>
   );

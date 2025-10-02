@@ -15,7 +15,7 @@ type DayReport = {
 };
 
 type SortConfig = {
-  key: keyof DayReport | null;
+  key: keyof DayReport | 'pendingPercentage' | null; // Added 'pendingPercentage' for sorting
   direction: "ascending" | "descending";
 };
 
@@ -51,7 +51,13 @@ export default function DayReportTable() {
 
   // Memoize filtered and sorted data for performance
   const processedData = useMemo(() => {
-    let sortedData = [...data];
+    // 1. Map data to include calculated pendingPercentage
+    const dataWithCalculations = data.map(day => ({
+        ...day,
+        pendingPercentage: day.totalRevenue > 0 ? (day.pendingAmount / day.totalRevenue) * 100 : 0,
+    }));
+
+    let sortedData = [...dataWithCalculations];
 
     // Filter data based on search query
     if (searchQuery) {
@@ -74,14 +80,16 @@ export default function DayReportTable() {
     // Sort data
     if (sortConfig.key !== null) {
       sortedData.sort((a, b) => {
-        const aValue = a[sortConfig.key!];
-        const bValue = b[sortConfig.key!];
-
+        // Special handling for date sorting
         if (sortConfig.key === "date") {
           const dateA = isValid(parseISO(a.date)) ? parseISO(a.date).getTime() : 0;
           const dateB = isValid(parseISO(b.date)) ? parseISO(b.date).getTime() : 0;
           return sortConfig.direction === "ascending" ? dateA - dateB : dateB - dateA;
         }
+
+        // Special handling for 'pendingPercentage'
+        const aValue = sortConfig.key === 'pendingPercentage' ? a.pendingPercentage : a[sortConfig.key as keyof DayReport];
+        const bValue = sortConfig.key === 'pendingPercentage' ? b.pendingPercentage : b[sortConfig.key as keyof DayReport];
 
         if (aValue < bValue) {
           return sortConfig.direction === "ascending" ? -1 : 1;
@@ -96,15 +104,22 @@ export default function DayReportTable() {
     return sortedData;
   }, [data, sortConfig, searchQuery]);
   
-  const requestSort = (key: keyof DayReport) => {
+  const requestSort = (key: keyof DayReport | 'pendingPercentage') => {
     let direction: "ascending" | "descending" = "ascending";
     if (sortConfig.key === key && sortConfig.direction === "ascending") {
       direction = "descending";
+    } else if (sortConfig.key === key && sortConfig.direction === "descending") {
+        // Default date sorting to descending, all others to ascending for first click
+        if (key === 'date') {
+            direction = "ascending"; // Cycle back to ascending for date
+        } else {
+            direction = "ascending";
+        }
     }
     setSortConfig({ key, direction });
   };
   
-  const getSortIcon = (key: keyof DayReport) => {
+  const getSortIcon = (key: keyof DayReport | 'pendingPercentage') => {
     if (sortConfig.key !== key) {
       return null;
     }
@@ -169,17 +184,25 @@ export default function DayReportTable() {
                   <th className="p-4 font-bold tracking-wider text-right cursor-pointer" data-tooltip-id="pending-tip" onClick={() => requestSort("pendingAmount")}>
                     <span className="flex items-center justify-end gap-2"><IndianRupee size={16} /> Pending {getSortIcon("pendingAmount")}</span>
                   </th>
+                  {/* NEW COLUMN HEADER: Pending Percentage */}
+                  <th className="p-4 font-bold tracking-wider text-right cursor-pointer" data-tooltip-id="pending-percent-tip" onClick={() => requestSort("pendingPercentage")}>
+                    <span className="flex items-center justify-end gap-2"><ArrowDown size={16} /> Pending % {getSortIcon("pendingPercentage")}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {processedData.map((day, i) => {
                   const rowBg = i % 2 === 0 ? "bg-white" : "bg-gray-50";
                   
+                  // For daily reporting, prevDay is the next item in the array if sorted descending by date
                   const prevDay = processedData[i + 1];
 
                   const completionPercentage = day.totalRevenue > 0 
                     ? (day.amountReceived / day.totalRevenue) * 100 
                     : 0;
+                  
+                  // Pending percentage is already calculated in processedData
+                  const pendingPercentage = day.pendingPercentage;
 
                   return (
                     <motion.tr
@@ -233,6 +256,22 @@ export default function DayReportTable() {
                             ₹{day.pendingAmount.toLocaleString()}
                           </span>
                           {getTrendIndicator(day.pendingAmount, prevDay?.pendingAmount, true)}
+                        </span>
+                      </td>
+                      {/* NEW COLUMN DATA CELL: Pending Percentage */}
+                      <td className="p-4 font-bold text-gray-600 text-right">
+                        <span className="flex flex-col items-end gap-1">
+                            <span className="text-sm font-extrabold text-red-700">
+                                {pendingPercentage.toFixed(1)}%
+                            </span>
+                            {day.totalRevenue > 0 && (
+                                <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        style={{ width: `${pendingPercentage}%` }}
+                                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500 ease-out"
+                                    ></div>
+                                </div>
+                            )}
                         </span>
                       </td>
                     </motion.tr>
@@ -298,6 +337,7 @@ export default function DayReportTable() {
       <Tooltip id="revenue-tip" content="Total revenue generated on this day." />
       <Tooltip id="received-tip" content="Total amount paid by clients on this day." />
       <Tooltip id="pending-tip" content="The remaining unpaid balance for all work on this day." />
+      <Tooltip id="pending-percent-tip" content="Percentage of total revenue that remains pending (Pending Amount / Total Revenue)." />
     </div>
   );
 }
