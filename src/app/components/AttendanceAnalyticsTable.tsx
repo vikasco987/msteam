@@ -340,7 +340,6 @@
 
 
 
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -353,13 +352,13 @@ interface Attendance {
   checkOut?: string;
   workingHours?: number;
   overtimeHours?: number;
-  date: string;
+  date: string; // UTC ISO string
 }
 
 export default function AttendanceAnalyticsTable() {
   const [month, setMonth] = useState<string>(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`; // default current month
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
   const [data, setData] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -371,7 +370,15 @@ export default function AttendanceAnalyticsTable() {
         const res = await fetch(`/api/attendance/list?month=${month}`);
         const json = await res.json();
         if (Array.isArray(json)) {
-          setData(json);
+          // 🔑 FIX: Normalize all dates to YYYY-MM-DD in UTC
+          const normalized = json.map((r: Attendance) => {
+            const d = new Date(r.date);
+            const yyyy = d.getUTCFullYear();
+            const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+            const dd = String(d.getUTCDate()).padStart(2, "0");
+            return { ...r, date: `${yyyy}-${mm}-${dd}` };
+          });
+          setData(normalized);
         } else {
           setData([]);
         }
@@ -388,6 +395,9 @@ export default function AttendanceAnalyticsTable() {
 
   // Group attendance by employee
   const grouped = data.reduce((acc: any, row) => {
+    // ✅ Filter by month string match (YYYY-MM)
+    if (!row.date.startsWith(month)) return acc;
+
     const name = row.employeeName || row.userId || "Unknown";
     if (!acc[name]) {
       acc[name] = {
@@ -405,14 +415,14 @@ export default function AttendanceAnalyticsTable() {
     const checkIn = row.checkIn ? new Date(row.checkIn) : null;
     const checkOut = row.checkOut ? new Date(row.checkOut) : null;
 
-    // Late if check-in after 10:15 AM
+    // Late if check-in after 10:15 AM local
     if (checkIn) {
       const cutoff = new Date(checkIn);
       cutoff.setHours(10, 15, 0, 0);
       if (checkIn > cutoff) acc[name].daysLate++;
     }
 
-    // Early leave if checkout before 7:00 PM
+    // Early leave if checkout before 7:00 PM local
     if (checkOut) {
       const cutoff = new Date(checkOut);
       cutoff.setHours(19, 0, 0, 0);
@@ -474,21 +484,12 @@ export default function AttendanceAnalyticsTable() {
               </tr>
             ) : (
               summary.map((row: any, idx) => (
-                <tr
-                  key={idx}
-                  className="border-t hover:bg-gray-50 transition"
-                >
+                <tr key={idx} className="border-t hover:bg-gray-50 transition">
                   <td className="p-3 border font-medium">{row.employee}</td>
                   <td className="p-3 border text-center">{row.daysPresent}</td>
-                  <td className="p-3 border text-center text-red-600">
-                    {row.daysLate}
-                  </td>
-                  <td className="p-3 border text-center text-yellow-600">
-                    {row.daysEarlyLeave}
-                  </td>
-                  <td className="p-3 border text-center">
-                    {formatHours(row.totalHours)}
-                  </td>
+                  <td className="p-3 border text-center text-red-600">{row.daysLate}</td>
+                  <td className="p-3 border text-center text-yellow-600">{row.daysEarlyLeave}</td>
+                  <td className="p-3 border text-center">{formatHours(row.totalHours)}</td>
                   <td className="p-3 border text-center text-green-600">
                     {formatHours(row.totalOvertime)}
                   </td>

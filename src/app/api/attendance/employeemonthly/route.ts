@@ -1,7 +1,3 @@
-
-
-
-
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -24,7 +20,8 @@ const calcWorkingHours = (checkIn: Date, checkOut: Date) => {
   } else if (checkIn >= lunchStart && checkIn < lunchEnd && checkOut > lunchEnd) {
     hours -= (lunchEnd.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
   }
-  return hours;
+
+  return Math.max(0, hours);
 };
 
 // Helper: determine day type
@@ -37,6 +34,7 @@ const calcDayType = (checkIn?: Date, checkOut?: Date, hours?: number) => {
 
 export async function GET(req: Request) {
   try {
+    // Authenticate
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,18 +43,23 @@ export async function GET(req: Request) {
     const { userId } = await auth({ token });
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Month filter
     const { searchParams } = new URL(req.url);
-    const month = searchParams.get("month");
+    const month = searchParams.get("month"); // YYYY-MM
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
       return NextResponse.json({ error: "Invalid month format. Use YYYY-MM" }, { status: 400 });
     }
 
     const [year, monthNum] = month.split("-").map(Number);
-    const startDate = new Date(Date.UTC(year, monthNum - 1, 1));
-    const endDate = new Date(Date.UTC(year, monthNum, 1));
+    const startDate = new Date(Date.UTC(year, monthNum - 1, 1, 0, 0, 0)); // 1st day 00:00 UTC
+    const endDate = new Date(Date.UTC(year, monthNum - 1, new Date(year, monthNum, 0).getDate(), 23, 59, 59)); // last day 23:59:59 UTC
 
+    // Fetch attendance
     const records = await prisma.attendance.findMany({
-      where: { userId, date: { gte: startDate, lt: endDate } },
+      where: { 
+        userId,
+        date: { gte: startDate, lte: endDate } // only current month
+      },
       orderBy: { date: "asc" },
       select: {
         id: true,
@@ -72,6 +75,7 @@ export async function GET(req: Request) {
       },
     });
 
+    // Format response
     const formatted = records.map((r, i) => {
       const checkInDate = r.checkIn ? new Date(r.checkIn) : undefined;
       const checkOutDate = r.checkOut ? new Date(r.checkOut) : undefined;
@@ -89,9 +93,9 @@ export async function GET(req: Request) {
         dayType,
         workingHours: workingHrs,
         overtime: Math.max(0, workingHrs - 8),
-        lateBy: checkInDate ? Math.max(0, checkInDate.getUTCHours() + checkInDate.getUTCMinutes() / 60 - 10).toFixed(2) + " hr" : null,
+        lateBy: checkInDate ? Math.max(0, (checkInDate.getUTCHours() + checkInDate.getUTCMinutes() / 60) - 10).toFixed(2) + " hr" : null,
         earlyBy: checkOutDate ? Math.max(0, 19 - (checkOutDate.getUTCHours() + checkOutDate.getUTCMinutes() / 60)).toFixed(2) + " hr" : null,
-        verified: !!r.verified,  // <- boolean
+        verified: !!r.verified,
         remarks: r.remarks ?? null,
       };
     });
