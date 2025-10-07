@@ -27,8 +27,8 @@ model Task {
   assigneeIds     String[] @default([])
 
   createdByClerkId String
-   createdByName    String?      // 👈 Add this
-  createdByEmail   String?      // 👈 Add this
+  createdByName    String?      
+  createdByEmail   String?      
 
   attachments     String[] @default([])
   paymentProofs   String[] @default([])
@@ -36,7 +36,7 @@ model Task {
   amount          Float?
   received        Float?
 
-  paymentHistory  Json[] @default([])
+  paymentHistory  Json[] @default([]) // keep for transaction logs
   customFields    Json?
 
   phone           String?
@@ -61,7 +61,8 @@ model Task {
 
   // Relations
   notes           Note[]
-  subtasks        Subtask[] @relation("TaskSubtasks")
+  subtasks        Subtask[]       @relation("TaskSubtasks")
+  paymentRemarks  PaymentRemark[] // 👈 NEW relation for multiple remarks
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime?
@@ -88,6 +89,50 @@ model Note {
   task         Task   @relation(fields: [taskId], references: [id])
 }
 
+model PaymentRemark {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  remark         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime? @updatedAt
+
+  // 👤 Author Info (from Clerk)
+  authorName     String?
+  authorEmail    String?
+  createdById    String?   // Clerk userId of creator
+
+  // 💰 Payment Details (linked to Task)
+  paymentStatus     String?   // e.g. "pending", "partial", "paid"
+  amountDiscussed   Float?    // from Task.amount (negotiated)
+  amountReceived    Float?    // from Task.received or this remark
+
+  // ⏰ Follow-ups & Deadlines
+  nextFollowUpDate  DateTime? // next recovery follow-up
+  followUpStatus    String?   // "scheduled", "completed", "missed"
+  pendingDeadline      DateTime?
+  pendingDeadlineSet   Boolean  @default(false)
+
+  // 📞 Communication
+  contactMethod     String?   // "call", "visit", "email", "whatsapp"
+  contactedBy       String?   // who contacted the client
+  contactOutcome    String?   // "not reachable", "negotiated", "promised date", etc.
+
+  // ⚠️ Priority & Reasoning
+  priorityLevel     String?   // "high", "medium", "low"
+  pendingReason     String?   // why payment is pending (e.g., "cash flow", "dispute", "invoice issue")
+  customerFeedback  String?   // any remarks from customer
+  internalNotes     String?   // internal analysis or notes
+
+  // 🔗 Relation to Task
+  taskId            String   @db.ObjectId
+  task              Task     @relation(fields: [taskId], references: [id])
+
+  // 🔍 Analytics & tracking
+  overdueDays       Int?      // auto-calculated: days overdue past pendingDeadline
+  followUpCount     Int?      @default(0) // number of follow-ups done
+  reminderSent      Boolean   @default(false) // whether reminder sent
+}
+
+
 model Goal {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
   period          String   @unique
@@ -108,11 +153,10 @@ model User {
   updatedAt DateTime @updatedAt
 }    
 
-
 model Attendance {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   userId         String
-  employeeName  String?
+  employeeName   String?
   faceImage      String?  
   location       Json?
   deviceInfo     String?  
@@ -121,8 +165,8 @@ model Attendance {
   checkInReason  String?  
   checkOutReason String?  
   date           DateTime @default(now())
-  status         String?   // "On Time", "Late", "Unverified", etc.
-  verified       Boolean   @default(false) // ✅ new field for Tish geo-fencing
+  status         String?   
+  verified       Boolean   @default(false) 
   workingHours   Float?
   overtimeHours  Float?
   remarks        String?
