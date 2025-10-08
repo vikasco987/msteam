@@ -1505,7 +1505,7 @@ export async function POST(req: Request) {
     
      addClause(
       "                     2. One Month Account Handling Charges:",
-      `The Client agrees to pay the Consultant a one-month account handling fee of INR ${fee} (Seven Thousand Only).`,
+      `The Client agrees to pay the Consultant a one-month account handling fee of INR ${fee}.`,
       true
     );
 
