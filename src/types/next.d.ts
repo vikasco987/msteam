@@ -12,3 +12,10 @@ declare module "next" {
     };
   }
 }
+
+
+
+
+// poiuyghui
+// 'l'oiuythhkjiko;
+// ;oiuyhghj
