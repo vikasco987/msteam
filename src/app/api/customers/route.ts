@@ -38,8 +38,7 @@
 
 
 import { NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client" // ✅ correct
- // ✅ Correct client
+import { PrismaClient } from "@prisma/client-customer" // ✅ Correct client
 
 const prisma = new PrismaClient()
 
