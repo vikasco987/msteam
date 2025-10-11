@@ -1387,6 +1387,181 @@
 
 
 
+// 'use client';
+
+// import { useState } from 'react';
+// import Link from 'next/link';
+// import { usePathname } from 'next/navigation';
+// import {
+//   LayoutDashboard,
+//   Users,
+//   LogOut,
+//   Menu,
+//   ClipboardList,
+//   ClipboardCheck,
+//   Building2,
+//   LineChart,
+//   ShoppingCart,
+//   FileSpreadsheet,
+//   CalendarCheck,
+// } from 'lucide-react';
+// import * as Tooltip from '@radix-ui/react-tooltip';
+// import { BarChart3 } from "lucide-react";
+// import { motion } from 'framer-motion';
+// import { useUser } from '@clerk/nextjs';
+
+// const allNavItems = [
+//   { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['admin', 'master', 'seller'] },
+//   { label: 'Team Board', icon: Users, href: '/team-board', roles: ['admin', 'master', 'seller', 'user'] },
+//   { label: 'Create Task', icon: ClipboardList, href: '/create-task', roles: ['admin', 'master', 'seller', 'user'] },
+//   { label: 'Assigned Task', icon: ClipboardCheck, href: '/report', roles: ['admin', 'master', 'seller'] },
+//   { label: 'KAM', icon: Building2, href: '/kam', roles: ['admin', 'master', 'seller'] },
+//   { label: 'Timeline', icon: LineChart, href: '/timeline', roles: ['admin', 'master', 'seller', 'temp'] },
+// //  { label: 'Leads', icon: FileSpreadsheet, href: '/leads', roles: ['admin', 'master', 'seller', 'user'] },
+//    { label: 'MySales Dashboard', icon: ShoppingCart,  href: '/seller/dashboard', roles: ['seller','admin'] },
+//   { label: 'Sales Dashboard', icon: BarChart3, href: '/sales-dashboard', roles: ['admin', 'master'] },
+
+//   { 
+//   label: 'Agreement', 
+//   icon: FileSpreadsheet, 
+//   href: '/FullDashboard/agreement', 
+//   roles: ['admin', 'master', 'seller'] 
+// },
+// { label: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance', roles: ['admin', 'master', 'seller'] },
+// { label: 'Tish', icon: CalendarCheck, href: '/dashboard/attendance/tish', roles: ['admin', 'master'] },
+
+  
+
+//   // ✅ NEW: Attendance Admin Link
+// //   { label: 'Attendance', icon: CalendarCheck, href: '/admin/attendance', roles: ['admin', 'master'] },
+// //  { label: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance', roles: ['admin', 'master', 'user', 'seller'] },
+
+
+// ];
+
+// export default function Sidebar() {
+//   const pathname = usePathname();
+//   const [isMobileOpen, setIsMobileOpen] = useState(false);
+//   const [isCollapsed, setIsCollapsed] = useState(true);
+//   const { user, isLoaded } = useUser();
+
+//   const userRole = isLoaded ? (user?.publicMetadata?.role || 'guest') : 'guest';
+//   const visibleNavItems = allNavItems.filter((item) => item.roles.includes(userRole));
+
+//   if (isLoaded && user) {
+//     visibleNavItems.push({
+//       label: 'Logout',
+//       icon: LogOut,
+//       href: '/sign-out',
+//       roles: ['admin', 'master', 'seller', 'guest'],
+//     });
+//   }
+
+//   return (
+//     <>
+//       {/* Toggle Button for Mobile */}
+//       <button
+//         onClick={() => setIsMobileOpen(!isMobileOpen)}
+//         className="md:hidden p-3 fixed top-4 left-4 z-50 bg-white rounded-full shadow-lg"
+//         aria-label="Toggle sidebar"
+//       >
+//         <Menu className="text-purple-700" />
+//       </button>
+
+//       {/* Sidebar */}
+//       <motion.aside
+//         initial={false}
+//         animate={{ width: isCollapsed ? 80 : 256 }}
+//         transition={{ duration: 0.3 }}
+//         onMouseEnter={() => setIsCollapsed(false)}
+//         onMouseLeave={() => setIsCollapsed(true)}
+//         className={`fixed top-0 left-0 h-screen
+//           bg-gradient-to-b from-[#1e1b4b] to-[#2e1065]
+//           text-white z-40
+//           transition-all duration-300 border-r border-violet-900
+//           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+//           md:translate-x-0 md:static md:flex
+//           overflow-hidden
+//         `}
+//       >
+//         <div className="flex flex-col h-full p-4 relative">
+//           {/* Logo */}
+//           <div
+//             className={`text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent mb-8 transition-opacity duration-300 ${
+//               isCollapsed ? 'opacity-0 w-0' : 'opacity-100'
+//             }`}
+//           >
+//             TaskNova
+//           </div>
+
+//           {/* Navigation */}
+//           <nav className="flex flex-col gap-2">
+//             {visibleNavItems.map((item) => {
+//               const isActive = pathname === item.href;
+//               return (
+//                 <Tooltip.Root key={item.href}>
+//                   <Tooltip.Trigger asChild>
+//                     <span>
+//                       <Link
+//                         href={item.href}
+//                         onClick={() => setIsMobileOpen(false)}
+//                         className={`flex items-center gap-3 px-4 py-2 rounded-md transition-all font-medium ${
+//                           isActive
+//                             ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+//                             : 'text-gray-300 hover:text-purple-300 hover:bg-white/5'
+//                         }`}
+//                       >
+//                         <item.icon size={22} />
+//                         {!isCollapsed && (
+//                           <motion.span
+//                             initial={{ opacity: 0, width: 0 }}
+//                             animate={{ opacity: 1, width: 'auto' }}
+//                             transition={{ duration: 0.2, delay: 0.1 }}
+//                             className="whitespace-nowrap overflow-hidden"
+//                           >
+//                             {item.label}
+//                           </motion.span>
+//                         )}
+//                       </Link>
+//                     </span>
+//                   </Tooltip.Trigger>
+//                   {isCollapsed && (
+//                     <Tooltip.Portal>
+//                       <Tooltip.Content
+//                         className="bg-black text-white text-sm px-3 py-1 rounded shadow-xl z-[9999]"
+//                         side="right"
+//                         sideOffset={8}
+//                       >
+//                         {item.label}
+//                         <Tooltip.Arrow className="fill-black" />
+//                       </Tooltip.Content>
+//                     </Tooltip.Portal>
+//                   )}
+//                 </Tooltip.Root>
+//               );
+//             })}
+//           </nav>
+//         </div>
+//       </motion.aside>
+//     </>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 'use client';
 
 import { useState } from 'react';
@@ -1404,12 +1579,14 @@ import {
   ShoppingCart,
   FileSpreadsheet,
   CalendarCheck,
+  UserSquare2,
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { BarChart3 } from "lucide-react";
 import { motion } from 'framer-motion';
 import { useUser } from '@clerk/nextjs';
 
+// ✅ Navigation Items
 const allNavItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/', roles: ['admin', 'master', 'seller'] },
   { label: 'Team Board', icon: Users, href: '/team-board', roles: ['admin', 'master', 'seller', 'user'] },
@@ -1417,26 +1594,18 @@ const allNavItems = [
   { label: 'Assigned Task', icon: ClipboardCheck, href: '/report', roles: ['admin', 'master', 'seller'] },
   { label: 'KAM', icon: Building2, href: '/kam', roles: ['admin', 'master', 'seller'] },
   { label: 'Timeline', icon: LineChart, href: '/timeline', roles: ['admin', 'master', 'seller', 'temp'] },
-//  { label: 'Leads', icon: FileSpreadsheet, href: '/leads', roles: ['admin', 'master', 'seller', 'user'] },
-   { label: 'MySales Dashboard', icon: ShoppingCart,  href: '/seller/dashboard', roles: ['seller','admin'] },
+  { label: 'MySales Dashboard', icon: ShoppingCart, href: '/seller/dashboard', roles: ['seller', 'admin'] },
   { label: 'Sales Dashboard', icon: BarChart3, href: '/sales-dashboard', roles: ['admin', 'master'] },
 
-  { 
-  label: 'Agreement', 
-  icon: FileSpreadsheet, 
-  href: '/FullDashboard/agreement', 
-  roles: ['admin', 'master', 'seller'] 
-},
-{ label: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance', roles: ['admin', 'master', 'seller'] },
-{ label: 'Tish', icon: CalendarCheck, href: '/dashboard/attendance/tish', roles: ['admin', 'master'] },
+  // Agreement
+  { label: 'Agreement', icon: FileSpreadsheet, href: '/FullDashboard/agreement', roles: ['admin', 'master', 'seller'] },
 
-  
+  // Attendance + Tish
+  { label: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance', roles: ['admin', 'master', 'seller'] },
+  { label: 'Tish', icon: CalendarCheck, href: '/dashboard/attendance/tish', roles: ['admin', 'master'] },
 
-  // ✅ NEW: Attendance Admin Link
-//   { label: 'Attendance', icon: CalendarCheck, href: '/admin/attendance', roles: ['admin', 'master'] },
-//  { label: 'Attendance', icon: CalendarCheck, href: '/dashboard/attendance', roles: ['admin', 'master', 'user', 'seller'] },
-
-
+  // ✅ NEW: Customers Page
+  { label: 'Customers', icon: UserSquare2, href: '/customers', roles: ['admin', 'master', 'seller'] },
 ];
 
 export default function Sidebar() {
@@ -1448,6 +1617,7 @@ export default function Sidebar() {
   const userRole = isLoaded ? (user?.publicMetadata?.role || 'guest') : 'guest';
   const visibleNavItems = allNavItems.filter((item) => item.roles.includes(userRole));
 
+  // Add logout when user is loaded
   if (isLoaded && user) {
     visibleNavItems.push({
       label: 'Logout',
