@@ -62,7 +62,7 @@ model Task {
   // Relations
   notes           Note[]
   subtasks        Subtask[]       @relation("TaskSubtasks")
-  paymentRemarks  PaymentRemark[] // 👈 NEW relation for multiple remarks
+  paymentRemarks  PaymentRemark[] // multiple remarks
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime?
@@ -95,43 +95,42 @@ model PaymentRemark {
   createdAt      DateTime @default(now())
   updatedAt      DateTime? @updatedAt
 
-  // 👤 Author Info (from Clerk)
+  // Author Info
   authorName     String?
   authorEmail    String?
-  createdById    String?   // Clerk userId of creator
+  createdById    String?   
 
-  // 💰 Payment Details (linked to Task)
-  paymentStatus     String?   // e.g. "pending", "partial", "paid"
-  amountDiscussed   Float?    // from Task.amount (negotiated)
-  amountReceived    Float?    // from Task.received or this remark
+  // Payment Details
+  paymentStatus     String?   
+  amountDiscussed   Float?    
+  amountReceived    Float?    
 
-  // ⏰ Follow-ups & Deadlines
-  nextFollowUpDate  DateTime? // next recovery follow-up
-  followUpStatus    String?   // "scheduled", "completed", "missed"
+  // Follow-ups & Deadlines
+  nextFollowUpDate  DateTime? 
+  followUpStatus    String?   
   pendingDeadline      DateTime?
   pendingDeadlineSet   Boolean  @default(false)
 
-  // 📞 Communication
-  contactMethod     String?   // "call", "visit", "email", "whatsapp"
-  contactedBy       String?   // who contacted the client
-  contactOutcome    String?   // "not reachable", "negotiated", "promised date", etc.
+  // Communication
+  contactMethod     String?   
+  contactedBy       String?   
+  contactOutcome    String?    
 
-  // ⚠️ Priority & Reasoning
-  priorityLevel     String?   // "high", "medium", "low"
-  pendingReason     String?   // why payment is pending (e.g., "cash flow", "dispute", "invoice issue")
-  customerFeedback  String?   // any remarks from customer
-  internalNotes     String?   // internal analysis or notes
+  // Priority & Reason
+  priorityLevel     String?   
+  pendingReason     String?   
+  customerFeedback  String?   
+  internalNotes     String?    
 
-  // 🔗 Relation to Task
+  // Relation to Task
   taskId            String   @db.ObjectId
   task              Task     @relation(fields: [taskId], references: [id])
 
-  // 🔍 Analytics & tracking
-  overdueDays       Int?      // auto-calculated: days overdue past pendingDeadline
-  followUpCount     Int?      @default(0) // number of follow-ups done
-  reminderSent      Boolean   @default(false) // whether reminder sent
+  // Analytics
+  overdueDays       Int?      
+  followUpCount     Int?      @default(0)
+  reminderSent      Boolean   @default(false)
 }
-
 
 model Goal {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -182,4 +181,15 @@ model AttendanceSummary {
   leaveDays      Int      @default(0)
   overtimeHours  Float    @default(0)
   updatedAt      DateTime @updatedAt
+}
+
+model Customer {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  phone       String   @unique
+  email       String?
+  remark      String?
+  remarks     String[]  @default([]) 
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
