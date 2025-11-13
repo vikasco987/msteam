@@ -1605,7 +1605,8 @@ const allNavItems = [
   { label: 'Tish', icon: CalendarCheck, href: '/dashboard/attendance/tish', roles: ['admin', 'master'] },
 
   // ✅ NEW: Customers Page
-  { label: 'Customers', icon: UserSquare2, href: '/customers', roles: ['admin', 'master', 'seller'] },
+  { label: 'Customers', icon: UserSquare2, 
+    href: '/customers', roles: ['admin', 'master', 'seller'] },
 ];
 
 export default function Sidebar() {
