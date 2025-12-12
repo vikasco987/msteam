@@ -71,7 +71,3 @@ export default function AgreementForm() {
 
 
 
-
-
-
-//;lkojhyfdseftuiop[poiuytrdesrryuipo[poiuyrt5ewer]]
