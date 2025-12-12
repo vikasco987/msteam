@@ -1043,26 +1043,27 @@ export default function KamTableView() {
                   <td className="px-4 py-3 whitespace-nowrap text-left text-gray-700 border-r border-b">
                     {editMode ? (
                       <div className="relative">
-                        <select
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition modern-select"
-                          value={editedStatusValues[t.id] ?? t.status || "todo"}
-                          onChange={(e) =>
-                            handleStatusChange(
-                              t.id,
-                              e.target.value as
-                                | "todo"
-                                | "inprogress"
-                                | "done"
-                                | "Archived"
-                            )
-                          }
-                          disabled={isStatusSaving}
-                        >
-                          <option value="todo">To Do</option>
-                          <option value="inprogress">In Progress</option>
-                          <option value="done">Done</option>
-                          <option value="Archived">Archived</option>
-                        </select>
+
+
+
+     <select
+  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition modern-select"
+  value={editedStatusValues[t.id] ?? t.status ?? "todo"}
+  onChange={(e) =>
+    handleStatusChange(
+      t.id,
+      e.target.value as "todo" | "inprogress" | "done" | "Archived"
+    )
+  }
+  disabled={isStatusSaving}
+>
+  <option value="todo">To Do</option>
+  <option value="inprogress">In Progress</option>
+  <option value="done">Done</option>
+  <option value="Archived">Archived</option>
+</select>
+
+                        
                         {isStatusSaving && (
                           <FaSpinner className="animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-indigo-500 text-sm" />
                         )}
